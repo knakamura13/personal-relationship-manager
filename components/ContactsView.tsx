@@ -45,9 +45,10 @@ export default function ContactsView() {
     try {
       const response = await fetch("/api/contacts");
       const data = await response.json();
-      setContacts(data);
+      setContacts(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Failed to fetch contacts:", error);
+      setContacts([]);
     } finally {
       setLoading(false);
     }
@@ -57,9 +58,10 @@ export default function ContactsView() {
     try {
       const response = await fetch("/api/tags");
       const data = await response.json();
-      setTags(data);
+      setTags(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Failed to fetch tags:", error);
+      setTags([]);
     }
   };
 

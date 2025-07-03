@@ -46,9 +46,10 @@ export default function LogsView() {
     try {
       const response = await fetch("/api/logs");
       const data = await response.json();
-      setLogs(data);
+      setLogs(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Failed to fetch logs:", error);
+      setLogs([]);
     } finally {
       setLoading(false);
     }
@@ -58,9 +59,10 @@ export default function LogsView() {
     try {
       const response = await fetch("/api/tags");
       const data = await response.json();
-      setTags(data);
+      setTags(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Failed to fetch tags:", error);
+      setTags([]);
     }
   };
 
