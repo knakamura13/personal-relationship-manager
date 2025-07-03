@@ -12,8 +12,17 @@ import {
   Paperclip,
 } from "lucide-react";
 import { fuzzySearch, formatDate, compressImageToBase64 } from "@/lib/utils";
+
 import TagInput from "./TagInput";
 import AttachmentManager from "./AttachmentManager";
+
+const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return "0 Bytes";
+  const k = 1024;
+  const sizes = ["Bytes", "KB", "MB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+};
 
 interface Attachment {
   id: string;
@@ -57,7 +66,20 @@ export default function ContactsView({
   const [sortBy, setSortBy] = useState<"name" | "updated">("name");
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
+
+  // Debug logging for form state changes
+  useEffect(() => {
+    console.log("showAddForm changed to:", showAddForm);
+  }, [showAddForm]);
+
+  useEffect(() => {
+    console.log("editingContact changed to:", editingContact?.id || null);
+  }, [editingContact]);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
+  const [previewAttachment, setPreviewAttachment] = useState<Attachment | null>(
+    null
+  );
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -129,6 +151,8 @@ export default function ContactsView({
   };
 
   const resetForm = () => {
+    console.log("resetForm called - closing edit form");
+    console.trace("Stack trace for resetForm call:");
     setFormData({ name: "", notes: "", tags: [], avatar: null });
     setShowAddForm(false);
     setEditingContact(null);
@@ -197,6 +221,56 @@ export default function ContactsView({
     setShowAvatarModal(false);
   };
 
+  const handleAttachmentPreview = async (attachment: Attachment | null) => {
+    console.log("handleAttachmentPreview called with:", attachment);
+
+    if (!attachment || !attachment.mimeType.startsWith("image/")) {
+      console.log("Invalid attachment or not an image");
+      closeAttachmentPreview();
+      return;
+    }
+
+    try {
+      console.log("Setting preview attachment:", attachment.id);
+      setPreviewAttachment(attachment);
+
+      console.log("Fetching attachment from API...");
+      const response = await fetch(`/api/attachments/${attachment.id}`);
+      console.log("API response status:", response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("API error response:", errorText);
+        throw new Error(
+          `Failed to load image: ${response.status} ${errorText}`
+        );
+      }
+
+      const blob = await response.blob();
+      console.log("Got blob, creating URL...");
+      const url = URL.createObjectURL(blob);
+      console.log("Setting preview image URL:", url);
+      setPreviewImageUrl(url);
+    } catch (error) {
+      console.error("Preview error:", error);
+      closeAttachmentPreview();
+    }
+  };
+
+  const closeAttachmentPreview = () => {
+    if (previewImageUrl) {
+      URL.revokeObjectURL(previewImageUrl);
+    }
+    setPreviewImageUrl(null);
+    setPreviewAttachment(null);
+  };
+
+  const handlePreviewModalClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      closeAttachmentPreview();
+    }
+  };
+
   const triggerFileUpload = () => {
     const fileInput = document.getElementById(
       "avatar-upload"
@@ -204,24 +278,39 @@ export default function ContactsView({
     fileInput?.click();
   };
 
-  // Handle keyboard events for modal
+  // Handle keyboard events for modals
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && showAvatarModal) {
-        closeAvatarModal();
+      if (event.key === "Escape") {
+        if (previewAttachment) {
+          event.preventDefault();
+          event.stopPropagation();
+          closeAttachmentPreview();
+        } else if (showAvatarModal) {
+          closeAvatarModal();
+        }
       }
     };
 
-    if (showAvatarModal) {
-      document.addEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = "hidden"; // Prevent background scrolling
+    if (previewAttachment || showAvatarModal) {
+      document.addEventListener("keydown", handleKeyDown, true);
+      document.body.style.overflow = "hidden";
     }
 
     return () => {
-      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("keydown", handleKeyDown, true);
       document.body.style.overflow = "unset";
     };
-  }, [showAvatarModal]);
+  }, [showAvatarModal, previewAttachment]);
+
+  // Cleanup preview image URL on unmount
+  useEffect(() => {
+    return () => {
+      if (previewImageUrl) {
+        URL.revokeObjectURL(previewImageUrl);
+      }
+    };
+  }, [previewImageUrl]);
 
   return (
     <div className="space-y-6">
@@ -371,6 +460,8 @@ export default function ContactsView({
                 attachments={editingContact.attachments || []}
                 contactId={editingContact.id}
                 onAttachmentsUpdate={onContactsUpdate}
+                onPreview={handleAttachmentPreview}
+                key={editingContact.id} // Force re-render when editing different contact
               />
             )}
 
@@ -429,7 +520,7 @@ export default function ContactsView({
                     <img
                       src={contact.avatar}
                       alt={`${contact.name}'s avatar`}
-                      className="w-10 h-10 rounded-full object-cover border-2 border-border flex-shrink-0"
+                      className="w-12 h-12 rounded-full object-cover border-2 border-border flex-shrink-0"
                     />
                   ) : (
                     <div className="w-12 h-12 rounded-full bg-muted border-2 border-border flex items-center justify-center flex-shrink-0">
@@ -499,6 +590,52 @@ export default function ContactsView({
             >
               <X size={16} />
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Attachment Preview Modal */}
+      {previewAttachment && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+          onClick={handlePreviewModalClick}
+        >
+          <div className="relative max-w-4xl max-h-full">
+            {previewImageUrl ? (
+              <img
+                src={previewImageUrl}
+                alt={previewAttachment.filename}
+                className="max-w-full max-h-full object-contain rounded-lg"
+                onClick={(e) => e.stopPropagation()}
+              />
+            ) : (
+              <div className="flex items-center justify-center w-64 h-64 bg-muted rounded-lg">
+                <div className="text-center">
+                  <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-2"></div>
+                  <div className="text-sm text-muted-foreground">
+                    Loading image...
+                  </div>
+                </div>
+              </div>
+            )}
+            <button
+              onClick={closeAttachmentPreview}
+              className="absolute -top-2 -right-2 w-8 h-8 bg-white text-black rounded-full flex items-center justify-center hover:bg-gray-100 transition-colors shadow-lg"
+              title="Close"
+            >
+              <X size={16} />
+            </button>
+            {previewImageUrl && (
+              <div className="absolute -bottom-2 left-0 right-0 bg-black/60 text-white text-center py-2 px-4 rounded-b-lg">
+                <div className="text-sm font-medium">
+                  {previewAttachment.filename}
+                </div>
+                <div className="text-xs opacity-80">
+                  {formatFileSize(previewAttachment.size)} •{" "}
+                  {new Date(previewAttachment.createdAt).toLocaleDateString()}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

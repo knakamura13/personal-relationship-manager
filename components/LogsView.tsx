@@ -1,8 +1,16 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { Search, Plus, Clock, BookOpen, Tag, Paperclip } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { Search, Plus, Clock, BookOpen, Tag, Paperclip, X } from "lucide-react";
 import { fuzzySearch, formatDate, formatDateForInput } from "@/lib/utils";
+
+const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return "0 Bytes";
+  const k = 1024;
+  const sizes = ["Bytes", "KB", "MB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+};
 import TagInput from "./TagInput";
 import AttachmentManager from "./AttachmentManager";
 
@@ -47,6 +55,19 @@ export default function LogsView({
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingLog, setEditingLog] = useState<LogEntry | null>(null);
+
+  // Debug logging for form state changes
+  useEffect(() => {
+    console.log("LogsView: showAddForm changed to:", showAddForm);
+  }, [showAddForm]);
+
+  useEffect(() => {
+    console.log("LogsView: editingLog changed to:", editingLog?.id || null);
+  }, [editingLog]);
+  const [previewAttachment, setPreviewAttachment] = useState<Attachment | null>(
+    null
+  );
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -109,6 +130,7 @@ export default function LogsView({
   };
 
   const resetForm = () => {
+    console.log("LogsView: resetForm called - closing edit form");
     setFormData({
       title: "",
       content: "",
@@ -149,6 +171,86 @@ export default function LogsView({
       tags: prev.tags.filter((tag) => tag !== tagName),
     }));
   };
+
+  const handleAttachmentPreview = async (attachment: Attachment | null) => {
+    console.log("LogsView: handleAttachmentPreview called with:", attachment);
+
+    if (!attachment || !attachment.mimeType.startsWith("image/")) {
+      console.log("LogsView: Invalid attachment or not an image");
+      closeAttachmentPreview();
+      return;
+    }
+
+    try {
+      console.log("LogsView: Setting preview attachment:", attachment.id);
+      setPreviewAttachment(attachment);
+
+      console.log("LogsView: Fetching attachment from API...");
+      const response = await fetch(`/api/attachments/${attachment.id}`);
+      console.log("LogsView: API response status:", response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("LogsView: API error response:", errorText);
+        throw new Error(
+          `Failed to load image: ${response.status} ${errorText}`
+        );
+      }
+
+      const blob = await response.blob();
+      console.log("LogsView: Got blob, creating URL...");
+      const url = URL.createObjectURL(blob);
+      console.log("LogsView: Setting preview image URL:", url);
+      setPreviewImageUrl(url);
+    } catch (error) {
+      console.error("LogsView: Preview error:", error);
+      closeAttachmentPreview();
+    }
+  };
+
+  const closeAttachmentPreview = () => {
+    if (previewImageUrl) {
+      URL.revokeObjectURL(previewImageUrl);
+    }
+    setPreviewImageUrl(null);
+    setPreviewAttachment(null);
+  };
+
+  const handlePreviewModalClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      closeAttachmentPreview();
+    }
+  };
+
+  // Handle keyboard events for preview modal
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && previewAttachment) {
+        event.preventDefault();
+        event.stopPropagation();
+        closeAttachmentPreview();
+      }
+    };
+
+    if (previewAttachment) {
+      document.addEventListener("keydown", handleKeyDown, true);
+      document.body.style.overflow = "hidden";
+    }
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown, true);
+      document.body.style.overflow = "unset";
+    };
+  }, [previewAttachment]);
+
+  // Cleanup preview image URL on unmount
+  useEffect(() => {
+    return () => {
+      if (previewImageUrl) {
+        URL.revokeObjectURL(previewImageUrl);
+      }
+    };
+  }, [previewImageUrl]);
 
   return (
     <div className="space-y-6">
@@ -242,6 +344,8 @@ export default function LogsView({
                 attachments={editingLog.attachments || []}
                 logEntryId={editingLog.id}
                 onAttachmentsUpdate={onLogsUpdate}
+                onPreview={handleAttachmentPreview}
+                key={editingLog.id}
               />
             )}
 
@@ -398,6 +502,52 @@ export default function LogsView({
           </div>
         )}
       </div>
+
+      {/* Attachment Preview Modal */}
+      {previewAttachment && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+          onClick={handlePreviewModalClick}
+        >
+          <div className="relative max-w-4xl max-h-full">
+            {previewImageUrl ? (
+              <img
+                src={previewImageUrl}
+                alt={previewAttachment.filename}
+                className="max-w-full max-h-full object-contain rounded-lg"
+                onClick={(e) => e.stopPropagation()}
+              />
+            ) : (
+              <div className="flex items-center justify-center w-64 h-64 bg-muted rounded-lg">
+                <div className="text-center">
+                  <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-2"></div>
+                  <div className="text-sm text-muted-foreground">
+                    Loading image...
+                  </div>
+                </div>
+              </div>
+            )}
+            <button
+              onClick={closeAttachmentPreview}
+              className="absolute -top-2 -right-2 w-8 h-8 bg-white text-black rounded-full flex items-center justify-center hover:bg-gray-100 transition-colors shadow-lg"
+              title="Close"
+            >
+              <X size={16} />
+            </button>
+            {previewImageUrl && (
+              <div className="absolute -bottom-2 left-0 right-0 bg-black/60 text-white text-center py-2 px-4 rounded-b-lg">
+                <div className="text-sm font-medium">
+                  {previewAttachment.filename}
+                </div>
+                <div className="text-xs opacity-80">
+                  {formatFileSize(previewAttachment.size)} •{" "}
+                  {new Date(previewAttachment.createdAt).toLocaleDateString()}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

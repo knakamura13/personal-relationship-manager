@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   Upload,
   X,
@@ -24,6 +24,7 @@ interface AttachmentManagerProps {
   contactId?: string;
   logEntryId?: string;
   onAttachmentsUpdate: () => Promise<void>;
+  onPreview?: (attachment: Attachment | null) => void;
 }
 
 export default function AttachmentManager({
@@ -31,23 +32,22 @@ export default function AttachmentManager({
   contactId,
   logEntryId,
   onAttachmentsUpdate,
+  onPreview,
 }: AttachmentManagerProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [previewAttachment, setPreviewAttachment] = useState<Attachment | null>(
-    null
-  );
-  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Cleanup preview image URL on unmount
+  // Debug logging for component lifecycle
   useEffect(() => {
+    console.log(
+      "AttachmentManager mounted/updated for:",
+      contactId || logEntryId
+    );
     return () => {
-      if (previewImageUrl) {
-        URL.revokeObjectURL(previewImageUrl);
-      }
+      console.log("AttachmentManager unmounted for:", contactId || logEntryId);
     };
-  }, [previewImageUrl]);
+  }, [contactId, logEntryId]);
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return "0 Bytes";
@@ -155,28 +155,17 @@ export default function AttachmentManager({
     }
   };
 
-  const handlePreview = async (attachment: Attachment) => {
-    if (!attachment.mimeType.startsWith("image/")) return;
-
-    try {
-      const response = await fetch(`/api/attachments/${attachment.id}`);
-      if (!response.ok) throw new Error("Failed to load image");
-
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      setPreviewImageUrl(url);
-      setPreviewAttachment(attachment);
-    } catch (error) {
-      console.error("Preview error:", error);
+  const handlePreview = (attachment: Attachment) => {
+    console.log(
+      "AttachmentManager: handlePreview called for:",
+      attachment.filename
+    );
+    if (!attachment.mimeType.startsWith("image/")) {
+      console.log("AttachmentManager: Not an image, skipping preview");
+      return;
     }
-  };
-
-  const closePreview = () => {
-    if (previewImageUrl) {
-      URL.revokeObjectURL(previewImageUrl);
-    }
-    setPreviewImageUrl(null);
-    setPreviewAttachment(null);
+    console.log("AttachmentManager: Calling onPreview with attachment");
+    onPreview?.(attachment);
   };
 
   return (
@@ -231,7 +220,11 @@ export default function AttachmentManager({
               >
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <button
-                    onClick={() => handlePreview(attachment)}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handlePreview(attachment);
+                    }}
                     className={`${
                       attachment.mimeType.startsWith("image/")
                         ? "cursor-pointer hover:opacity-80 transition-opacity"
@@ -258,6 +251,7 @@ export default function AttachmentManager({
                 </div>
                 <div className="flex items-center gap-1">
                   <button
+                    type="button"
                     onClick={() => handleDownload(attachment)}
                     className="p-1 hover:bg-accent rounded transition-colors"
                     title="Download"
@@ -265,6 +259,7 @@ export default function AttachmentManager({
                     <Download size={14} />
                   </button>
                   <button
+                    type="button"
                     onClick={() => handleDelete(attachment.id)}
                     className="p-1 hover:bg-destructive/10 text-destructive hover:text-destructive rounded transition-colors"
                     title="Delete"
@@ -274,39 +269,6 @@ export default function AttachmentManager({
                 </div>
               </div>
             ))}
-          </div>
-        </div>
-      )}
-
-      {/* Image Preview Modal */}
-      {previewAttachment && previewImageUrl && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
-          onClick={closePreview}
-        >
-          <div className="relative max-w-4xl max-h-full">
-            <img
-              src={previewImageUrl}
-              alt={previewAttachment.filename}
-              className="max-w-full max-h-full object-contain rounded-lg"
-              onClick={(e) => e.stopPropagation()}
-            />
-            <button
-              onClick={closePreview}
-              className="absolute -top-2 -right-2 w-8 h-8 bg-white text-black rounded-full flex items-center justify-center hover:bg-gray-100 transition-colors shadow-lg"
-              title="Close"
-            >
-              <X size={16} />
-            </button>
-            <div className="absolute -bottom-2 left-0 right-0 bg-black/60 text-white text-center py-2 px-4 rounded-b-lg">
-              <div className="text-sm font-medium">
-                {previewAttachment.filename}
-              </div>
-              <div className="text-xs opacity-80">
-                {formatFileSize(previewAttachment.size)} •{" "}
-                {new Date(previewAttachment.createdAt).toLocaleDateString()}
-              </div>
-            </div>
           </div>
         </div>
       )}
