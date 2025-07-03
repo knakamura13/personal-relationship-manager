@@ -178,6 +178,13 @@ export default function ContactsView({
     setShowAvatarModal(false);
   };
 
+  const triggerFileUpload = () => {
+    const fileInput = document.getElementById(
+      "avatar-upload"
+    ) as HTMLInputElement;
+    fileInput?.click();
+  };
+
   // Handle keyboard events for modal
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -285,8 +292,15 @@ export default function ContactsView({
                     </button>
                   </div>
                 ) : (
-                  <div className="w-16 h-16 rounded-full bg-muted border-2 border-dashed border-border flex items-center justify-center">
-                    <User size={24} className="text-muted-foreground" />
+                  <div
+                    className="w-16 h-16 rounded-full bg-muted border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:bg-muted/80 transition-colors group"
+                    onClick={triggerFileUpload}
+                    title="Click to upload photo"
+                  >
+                    <User
+                      size={24}
+                      className="text-muted-foreground group-hover:text-muted-foreground/80"
+                    />
                   </div>
                 )}
                 <div className="flex-1">
@@ -390,7 +404,7 @@ export default function ContactsView({
                       className="w-10 h-10 rounded-full object-cover border-2 border-border flex-shrink-0"
                     />
                   ) : (
-                    <div className="w-14 h-14 rounded-full bg-muted border-2 border-border flex items-center justify-center flex-shrink-0">
+                    <div className="w-12 h-12 rounded-full bg-muted border-2 border-border flex items-center justify-center flex-shrink-0">
                       <User size={16} className="text-muted-foreground" />
                     </div>
                   )}
