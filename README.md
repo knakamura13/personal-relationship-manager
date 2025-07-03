@@ -219,3 +219,111 @@ npx prisma db push
 - No analytics dashboards or AI insights
 - No complex tagging beyond basic labels
 - No team collaboration tools
+
+## Future Enhancements Roadmap
+
+This section outlines potential improvements and features being considered for future development, organized by priority and implementation complexity.
+
+### 🚀 High Impact, Low Effort
+
+#### Contact-Log Linking
+
+- Link log entries to specific contacts for relationship context
+- Show related logs when viewing a contact
+- Filter logs by contact with autocomplete contact selection
+
+#### Quick Actions & Shortcuts
+
+- Floating Action Button (FAB) for mobile quick-add functionality
+- Keyboard shortcuts for power users (Ctrl+N, Ctrl+L)
+- Swipe actions on mobile for quick edit/delete operations
+
+#### Contact Interaction Tracking
+
+- Add "last contacted" date to contacts
+- Visual indicators for interaction recency
+- Sort by "needs follow-up" for relationship maintenance
+- Quick "log interaction" button on contact cards
+
+#### Progressive Web App (PWA)
+
+- Install as native app on mobile devices
+- Offline viewing of cached data
+- Push notifications for reminders
+
+### 🎯 Medium Impact, Medium Effort
+
+#### Simple Reminders System
+
+- Basic "contact in X days" reminders without complex scheduling
+- Browser notifications for due reminders
+- Mark reminders complete when adding related logs
+
+#### Data Export & Backup
+
+- JSON export for data portability
+- Simple backup/restore functionality
+- Print-friendly views for contact lists
+
+#### Enhanced Search & Filtering
+
+- Advanced filters: date ranges, multiple tags, contact-specific logs
+- Search history for quick re-searching
+- Saved searches for common query patterns
+
+#### Contact Relationship Mapping
+
+- Basic relationship tags ("family", "colleague", "friend")
+- Visual groupings in contact list
+- Family/team clustering functionality
+
+### 🔧 Quality of Life Improvements
+
+#### Bulk Operations
+
+- Multi-select for contacts and logs
+- Bulk tagging, deletion, and export
+- Batch operations for data maintenance
+
+#### Simple Analytics Dashboard
+
+- Contact/log count over time (without complex CRM analytics)
+- Most frequently used tags
+- Interaction frequency heatmap
+- "Contact health" indicators for follow-up needs
+
+#### Enhanced Mobile UX
+
+- Bottom sheet modals instead of full-screen forms
+- Pull-to-refresh gesture support
+- Haptic feedback for interactions
+- Improved thumb-friendly navigation
+
+#### Smart Templates
+
+- Pre-written log templates for common interactions
+- Templates for "Coffee meeting", "Phone call", "Email exchange"
+- Quick template insertion with customization options
+
+#### Contact Import (Minimal)
+
+- Simple, one-time CSV import for existing contact lists
+- Basic name/notes import only (no ongoing sync)
+- Maintains manual-only data entry philosophy
+
+#### Enhanced Visual Design
+
+- Contact avatars generated from initials when no photo uploaded
+- Tag color coding utilization (leveraging existing color field)
+- Activity timeline view for logs
+- Dark mode optimizations
+
+### 🏆 Top Priority Recommendations
+
+The following three features would provide the highest value-to-effort ratio:
+
+1. **Contact-Log Linking** - Creates powerful relationship context using existing infrastructure
+2. **PWA + Offline Support** - Dramatically improves mobile-first experience
+3. **Contact Interaction Tracking** - Enables proactive relationship maintenance
+
+These enhancements align with the core mission of helping users maintain personal relationships while preserving the app's simplicity and mobile-first design philosophy.
