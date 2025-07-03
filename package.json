@@ -11,6 +11,7 @@
     "start": "next start",
     "start:production": "prisma migrate deploy && next start",
     "deploy": "node scripts/deploy.js",
+    "migrate:production": "node scripts/migrate-production.js",
     "lint": "next lint",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
