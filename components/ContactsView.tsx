@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Search, Plus, Tag, Clock, User, Upload, X } from "lucide-react";
 import { fuzzySearch, formatDate, compressImageToBase64 } from "@/lib/utils";
 import TagInput from "./TagInput";
@@ -38,6 +38,7 @@ export default function ContactsView({
   const [sortBy, setSortBy] = useState<"name" | "updated">("name");
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -167,6 +168,35 @@ export default function ContactsView({
     }));
   };
 
+  const openAvatarModal = () => {
+    if (formData.avatar) {
+      setShowAvatarModal(true);
+    }
+  };
+
+  const closeAvatarModal = () => {
+    setShowAvatarModal(false);
+  };
+
+  // Handle keyboard events for modal
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && showAvatarModal) {
+        closeAvatarModal();
+      }
+    };
+
+    if (showAvatarModal) {
+      document.addEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "hidden"; // Prevent background scrolling
+    }
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "unset";
+    };
+  }, [showAvatarModal]);
+
   return (
     <div className="space-y-6">
       {/* Header with search and controls */}
@@ -242,7 +272,9 @@ export default function ContactsView({
                     <img
                       src={formData.avatar}
                       alt="Avatar preview"
-                      className="w-16 h-16 rounded-full object-cover border-2 border-border"
+                      className="w-16 h-16 rounded-full object-cover border-2 border-border cursor-pointer hover:opacity-80 transition-opacity"
+                      onClick={openAvatarModal}
+                      title="Click to view full size"
                     />
                     <button
                       type="button"
@@ -358,7 +390,7 @@ export default function ContactsView({
                       className="w-10 h-10 rounded-full object-cover border-2 border-border flex-shrink-0"
                     />
                   ) : (
-                    <div className="w-10 h-10 rounded-full bg-muted border-2 border-border flex items-center justify-center flex-shrink-0">
+                    <div className="w-14 h-14 rounded-full bg-muted border-2 border-border flex items-center justify-center flex-shrink-0">
                       <User size={16} className="text-muted-foreground" />
                     </div>
                   )}
@@ -397,6 +429,30 @@ export default function ContactsView({
           ))
         )}
       </div>
+
+      {/* Avatar Modal */}
+      {showAvatarModal && formData.avatar && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+          onClick={closeAvatarModal}
+        >
+          <div className="relative max-w-3xl max-h-full">
+            <img
+              src={formData.avatar}
+              alt="Avatar full size"
+              className="max-w-full max-h-full object-contain rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
+            <button
+              onClick={closeAvatarModal}
+              className="absolute -top-2 -right-2 w-8 h-8 bg-white text-black rounded-full flex items-center justify-center hover:bg-gray-100 transition-colors shadow-lg"
+              title="Close"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
