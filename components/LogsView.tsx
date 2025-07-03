@@ -201,14 +201,14 @@ export default function LogsView() {
             <div className="flex gap-2 pt-4">
               <button
                 type="submit"
-                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                className="px-3 sm:px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm"
               >
-                {editingLog ? "Update" : "Add"} Entry
+                Save Entry
               </button>
               <button
                 type="button"
                 onClick={resetForm}
-                className="px-4 py-2 border border-input text-foreground rounded-lg hover:bg-accent transition-colors"
+                className="px-3 sm:px-4 py-2 border border-input text-foreground rounded-lg hover:bg-accent transition-colors text-sm"
               >
                 Cancel
               </button>
@@ -216,9 +216,9 @@ export default function LogsView() {
                 <button
                   type="button"
                   onClick={() => handleDelete(editingLog.id)}
-                  className="px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 transition-colors ml-auto"
+                  className="px-3 sm:px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 transition-colors ml-auto text-sm"
                 >
-                  Delete Entry
+                  Delete
                 </button>
               )}
             </div>

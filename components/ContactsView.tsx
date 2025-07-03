@@ -293,14 +293,14 @@ export default function ContactsView() {
             <div className="flex gap-2 pt-4">
               <button
                 type="submit"
-                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                className="px-3 sm:px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm"
               >
-                {editingContact ? "Update" : "Add"} Contact
+                Save Contact
               </button>
               <button
                 type="button"
                 onClick={resetForm}
-                className="px-4 py-2 border border-input text-foreground rounded-lg hover:bg-accent transition-colors"
+                className="px-3 sm:px-4 py-2 border border-input text-foreground rounded-lg hover:bg-accent transition-colors text-sm"
               >
                 Cancel
               </button>
@@ -308,9 +308,9 @@ export default function ContactsView() {
                 <button
                   type="button"
                   onClick={() => handleDelete(editingContact.id)}
-                  className="px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 transition-colors ml-auto"
+                  className="px-3 sm:px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 transition-colors ml-auto text-sm"
                 >
-                  Delete Contact
+                  Delete
                 </button>
               )}
             </div>
