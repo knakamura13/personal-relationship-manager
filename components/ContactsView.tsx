@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Search, Plus, Edit2, Trash2, Tag, Clock, User } from "lucide-react";
+import { Search, Plus, Tag, Clock, User } from "lucide-react";
 import { fuzzySearch, formatDate } from "@/lib/utils";
 
 interface Contact {
@@ -304,6 +304,15 @@ export default function ContactsView() {
               >
                 Cancel
               </button>
+              {editingContact && (
+                <button
+                  type="button"
+                  onClick={() => handleDelete(editingContact.id)}
+                  className="px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 transition-colors ml-auto"
+                >
+                  Delete Contact
+                </button>
+              )}
             </div>
           </form>
         </div>
@@ -327,9 +336,12 @@ export default function ContactsView() {
               key={contact.id}
               className="bg-card border border-border rounded-lg p-4 hover:shadow-md transition-all duration-200 hover:border-border/80"
             >
-              <div className="flex items-start justify-between">
+              <button
+                onClick={() => startEdit(contact)}
+                className="text-left w-full group"
+              >
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-card-foreground truncate">
+                  <h3 className="font-semibold text-card-foreground truncate group-hover:text-primary transition-colors">
                     {contact.name}
                   </h3>
                   {contact.notes && (
@@ -357,22 +369,7 @@ export default function ContactsView() {
                     </span>
                   </div>
                 </div>
-
-                <div className="flex items-start gap-2 ml-4">
-                  <button
-                    onClick={() => startEdit(contact)}
-                    className="p-2 text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    <Edit2 size={16} />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(contact.id)}
-                    className="p-2 text-muted-foreground hover:text-destructive transition-colors"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </div>
+              </button>
             </div>
           ))
         )}
