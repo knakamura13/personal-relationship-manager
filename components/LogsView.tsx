@@ -162,7 +162,7 @@ export default function LogsView({
 
         <button
           onClick={() => setShowAddForm(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm w-full sm:w-auto justify-center"
+          className="flex items-center gap-2 px-4 py-2 h-10 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm w-full sm:w-auto justify-center"
         >
           <Plus size={16} />
           Add Log Entry
