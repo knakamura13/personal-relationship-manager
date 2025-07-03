@@ -15,6 +15,7 @@ model Contact {
   name      String
   notes     String   @default("")
   tags      String   @default("[]") // JSON array of tags
+  avatar    String?  // Base64 encoded image data
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

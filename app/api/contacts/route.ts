@@ -28,7 +28,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, notes, tags } = body;
+    const { name, notes, tags, avatar } = body;
 
     if (!name?.trim()) {
       return NextResponse.json({ error: "Name is required" }, { status: 400 });
@@ -45,6 +45,7 @@ export async function POST(request: NextRequest) {
         name: name.trim(),
         notes: notes || "",
         tags: JSON.stringify(normalizedTags),
+        avatar: avatar || null,
       },
     });
 

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Search, Plus, Tag, Clock, User } from "lucide-react";
-import { fuzzySearch, formatDate } from "@/lib/utils";
+import { Search, Plus, Tag, Clock, User, Upload, X } from "lucide-react";
+import { fuzzySearch, formatDate, compressImageToBase64 } from "@/lib/utils";
 import TagInput from "./TagInput";
 
 interface Contact {
@@ -10,6 +10,7 @@ interface Contact {
   name: string;
   notes: string;
   tags: string[];
+  avatar?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -43,6 +44,7 @@ export default function ContactsView({
     name: "",
     notes: "",
     tags: [] as string[],
+    avatar: null as string | null,
   });
 
   // Filter and sort contacts
@@ -107,7 +109,7 @@ export default function ContactsView({
   };
 
   const resetForm = () => {
-    setFormData({ name: "", notes: "", tags: [] });
+    setFormData({ name: "", notes: "", tags: [], avatar: null });
     setShowAddForm(false);
     setEditingContact(null);
   };
@@ -117,6 +119,7 @@ export default function ContactsView({
       name: contact.name,
       notes: contact.notes,
       tags: contact.tags,
+      avatar: contact.avatar || null,
     });
     setEditingContact(contact);
     setShowAddForm(true);
@@ -139,6 +142,28 @@ export default function ContactsView({
     setFormData((prev) => ({
       ...prev,
       tags: prev.tags.filter((tag) => tag !== tagName),
+    }));
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const compressedBase64 = await compressImageToBase64(file);
+      setFormData((prev) => ({
+        ...prev,
+        avatar: compressedBase64,
+      }));
+    } catch (error) {
+      console.error("Failed to process image:", error);
+    }
+  };
+
+  const removeAvatar = () => {
+    setFormData((prev) => ({
+      ...prev,
+      avatar: null,
     }));
   };
 
@@ -207,6 +232,51 @@ export default function ContactsView({
                 className="w-full px-3 py-2 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent"
                 required
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">Avatar</label>
+              <div className="flex items-center gap-4">
+                {formData.avatar ? (
+                  <div className="relative">
+                    <img
+                      src={formData.avatar}
+                      alt="Avatar preview"
+                      className="w-16 h-16 rounded-full object-cover border-2 border-border"
+                    />
+                    <button
+                      type="button"
+                      onClick={removeAvatar}
+                      className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center hover:bg-destructive/90 transition-colors"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="w-16 h-16 rounded-full bg-muted border-2 border-dashed border-border flex items-center justify-center">
+                    <User size={24} className="text-muted-foreground" />
+                  </div>
+                )}
+                <div className="flex-1">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarUpload}
+                    className="hidden"
+                    id="avatar-upload"
+                  />
+                  <label
+                    htmlFor="avatar-upload"
+                    className="inline-flex items-center gap-2 px-3 py-2 border border-input rounded-lg bg-background hover:bg-accent transition-colors cursor-pointer text-sm"
+                  >
+                    <Upload size={16} />
+                    {formData.avatar ? "Change Photo" : "Upload Photo"}
+                  </label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    JPG, PNG, GIF up to 10MB. Will be resized to 1200px.
+                  </p>
+                </div>
+              </div>
             </div>
 
             <div>
@@ -280,33 +350,46 @@ export default function ContactsView({
                 onClick={() => startEdit(contact)}
                 className="text-left w-full group"
               >
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-card-foreground truncate group-hover:text-primary transition-colors">
-                    {contact.name}
-                  </h3>
-                  {contact.notes && (
-                    <p className="text-muted-foreground text-sm mt-1 line-clamp-2">
-                      {contact.notes}
-                    </p>
-                  )}
-                  {contact.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {contact.tags.map((tag) => (
-                        <span
-                          key={tag}
-                          className="inline-flex items-center px-2 py-1 bg-primary/10 text-primary rounded-md text-xs border border-primary/20 lowercase"
-                        >
-                          <Tag size={10} className="mr-1" />
-                          {tag}
-                        </span>
-                      ))}
+                <div className="flex items-start gap-3">
+                  {contact.avatar ? (
+                    <img
+                      src={contact.avatar}
+                      alt={`${contact.name}'s avatar`}
+                      className="w-10 h-10 rounded-full object-cover border-2 border-border flex-shrink-0"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-muted border-2 border-border flex items-center justify-center flex-shrink-0">
+                      <User size={16} className="text-muted-foreground" />
                     </div>
                   )}
-                  <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Clock size={12} />
-                      Updated {formatDate(new Date(contact.updatedAt))}
-                    </span>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-card-foreground truncate group-hover:text-primary transition-colors">
+                      {contact.name}
+                    </h3>
+                    {contact.notes && (
+                      <p className="text-muted-foreground text-sm mt-1 line-clamp-2">
+                        {contact.notes}
+                      </p>
+                    )}
+                    {contact.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {contact.tags.map((tag) => (
+                          <span
+                            key={tag}
+                            className="inline-flex items-center px-2 py-1 bg-primary/10 text-primary rounded-md text-xs border border-primary/20 lowercase"
+                          >
+                            <Tag size={10} className="mr-1" />
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <Clock size={12} />
+                        Updated {formatDate(new Date(contact.updatedAt))}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </button>

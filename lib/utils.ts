@@ -30,3 +30,49 @@ export function formatDate(date: Date): string {
 export function formatDateForInput(date: Date): string {
   return new Date(date).toISOString().split("T")[0];
 }
+
+// Compress and resize image to base64
+export function compressImageToBase64(
+  file: File,
+  maxSize: number = 1200,
+  quality: number = 0.8
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    const img = new Image();
+
+    img.onload = () => {
+      // Calculate new dimensions while maintaining aspect ratio
+      let { width, height } = img;
+
+      if (width > height) {
+        if (width > maxSize) {
+          height = (height * maxSize) / width;
+          width = maxSize;
+        }
+      } else {
+        if (height > maxSize) {
+          width = (width * maxSize) / height;
+          height = maxSize;
+        }
+      }
+
+      // Set canvas dimensions
+      canvas.width = width;
+      canvas.height = height;
+
+      // Draw and compress image
+      ctx?.drawImage(img, 0, 0, width, height);
+
+      // Convert to base64 with compression
+      const compressedBase64 = canvas.toDataURL("image/jpeg", quality);
+      resolve(compressedBase64);
+    };
+
+    img.onerror = () => reject(new Error("Failed to load image"));
+
+    // Create object URL for the image
+    img.src = URL.createObjectURL(file);
+  });
+}
