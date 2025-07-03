@@ -90,6 +90,7 @@ export default function LogsView({
 
       if (response.ok) {
         await onLogsUpdate();
+        resetForm(); // Close the edit form after successful deletion
       }
     } catch (error) {
       console.error("Failed to delete log entry:", error);

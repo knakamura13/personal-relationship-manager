@@ -98,6 +98,7 @@ export default function ContactsView({
 
       if (response.ok) {
         await onContactsUpdate();
+        resetForm(); // Close the edit form after successful deletion
       }
     } catch (error) {
       console.error("Failed to delete contact:", error);
