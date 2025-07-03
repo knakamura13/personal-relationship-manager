@@ -9,6 +9,8 @@
     "deploy:db": "prisma migrate deploy",
     "postinstall": "prisma generate",
     "start": "next start",
+    "start:production": "prisma migrate deploy && next start",
+    "deploy": "node scripts/deploy.js",
     "lint": "next lint",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
