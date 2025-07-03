@@ -1,10 +1,20 @@
 import { useState, useEffect, useCallback } from "react";
 
+interface Attachment {
+  id: string;
+  filename: string;
+  mimeType: string;
+  size: number;
+  createdAt: string;
+}
+
 interface Contact {
   id: string;
   name: string;
   notes: string;
   tags: string[];
+  avatar?: string | null;
+  attachments: Attachment[];
   createdAt: string;
   updatedAt: string;
 }
@@ -14,6 +24,7 @@ interface LogEntry {
   title: string;
   content: string;
   tags: string[];
+  attachments: Attachment[];
   date: string;
   createdAt: string;
   updatedAt: string;

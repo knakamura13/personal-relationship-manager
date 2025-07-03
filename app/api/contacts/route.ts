@@ -4,6 +4,18 @@ import { prisma } from "@/lib/db";
 export async function GET() {
   try {
     const contacts = await prisma.contact.findMany({
+      include: {
+        attachments: {
+          select: {
+            id: true,
+            filename: true,
+            mimeType: true,
+            size: true,
+            createdAt: true,
+            // Exclude data field to save bandwidth
+          },
+        },
+      },
       orderBy: {
         updatedAt: "desc",
       },

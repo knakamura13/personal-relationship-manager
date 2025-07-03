@@ -1,9 +1,27 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { Search, Plus, Tag, Clock, User, Upload, X } from "lucide-react";
+import {
+  Search,
+  Plus,
+  Tag,
+  Clock,
+  User,
+  Upload,
+  X,
+  Paperclip,
+} from "lucide-react";
 import { fuzzySearch, formatDate, compressImageToBase64 } from "@/lib/utils";
 import TagInput from "./TagInput";
+import AttachmentManager from "./AttachmentManager";
+
+interface Attachment {
+  id: string;
+  filename: string;
+  mimeType: string;
+  size: number;
+  createdAt: string;
+}
 
 interface Contact {
   id: string;
@@ -11,6 +29,7 @@ interface Contact {
   notes: string;
   tags: string[];
   avatar?: string | null;
+  attachments: Attachment[];
   createdAt: string;
   updatedAt: string;
 }
@@ -310,6 +329,7 @@ export default function ContactsView({
                     onChange={handleAvatarUpload}
                     className="hidden"
                     id="avatar-upload"
+                    multiple
                   />
                   <label
                     htmlFor="avatar-upload"
@@ -345,6 +365,14 @@ export default function ContactsView({
               onRemoveTag={removeTag}
               placeholder="Add a tag..."
             />
+
+            {editingContact && (
+              <AttachmentManager
+                attachments={editingContact.attachments || []}
+                contactId={editingContact.id}
+                onAttachmentsUpdate={onContactsUpdate}
+              />
+            )}
 
             <div className="flex gap-2 pt-4">
               <button
@@ -435,6 +463,13 @@ export default function ContactsView({
                         <Clock size={12} />
                         Updated {formatDate(new Date(contact.updatedAt))}
                       </span>
+                      {contact.attachments &&
+                        contact.attachments.length > 0 && (
+                          <span className="flex items-center gap-1 text-blue-600">
+                            <Paperclip size={12} />
+                            {contact.attachments.length}
+                          </span>
+                        )}
                     </div>
                   </div>
                 </div>

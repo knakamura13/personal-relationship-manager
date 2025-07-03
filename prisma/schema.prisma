@@ -11,27 +11,44 @@ datasource db {
 }
 
 model Contact {
-  id        String   @id @default(cuid())
-  name      String
-  notes     String   @default("")
-  tags      String   @default("[]") // JSON array of tags
-  avatar    String?  // Base64 encoded image data
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String       @id @default(cuid())
+  name        String
+  notes       String       @default("")
+  tags        String       @default("[]") // JSON array of tags
+  avatar      String?      // Base64 encoded image data
+  attachments Attachment[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 
   @@map("contacts")
 }
 
 model LogEntry {
-  id        String   @id @default(cuid())
-  title     String
-  content   String
-  tags      String   @default("[]") // JSON array of tags
-  date      DateTime @default(now())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String       @id @default(cuid())
+  title       String
+  content     String
+  tags        String       @default("[]") // JSON array of tags
+  date        DateTime     @default(now())
+  attachments Attachment[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 
   @@map("log_entries")
+}
+
+model Attachment {
+  id           String    @id @default(cuid())
+  filename     String    // Original filename
+  mimeType     String    // MIME type (image/jpeg, application/pdf, etc.)
+  size         Int       // File size in bytes
+  data         String    // Base64 encoded file data
+  contactId    String?
+  logEntryId   String?
+  contact      Contact?  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  logEntry     LogEntry? @relation(fields: [logEntryId], references: [id], onDelete: Cascade)
+  createdAt    DateTime  @default(now())
+
+  @@map("attachments")
 }
 
 model Tag {

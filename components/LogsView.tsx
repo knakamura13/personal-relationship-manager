@@ -1,15 +1,25 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Search, Plus, Clock, BookOpen, Tag } from "lucide-react";
+import { Search, Plus, Clock, BookOpen, Tag, Paperclip } from "lucide-react";
 import { fuzzySearch, formatDate, formatDateForInput } from "@/lib/utils";
 import TagInput from "./TagInput";
+import AttachmentManager from "./AttachmentManager";
+
+interface Attachment {
+  id: string;
+  filename: string;
+  mimeType: string;
+  size: number;
+  createdAt: string;
+}
 
 interface LogEntry {
   id: string;
   title: string;
   content: string;
   tags: string[];
+  attachments: Attachment[];
   date: string;
   createdAt: string;
   updatedAt: string;
@@ -227,6 +237,14 @@ export default function LogsView({
               placeholder="Add a tag..."
             />
 
+            {editingLog && (
+              <AttachmentManager
+                attachments={editingLog.attachments || []}
+                logEntryId={editingLog.id}
+                onAttachmentsUpdate={onLogsUpdate}
+              />
+            )}
+
             <div className="flex gap-2 pt-4">
               <button
                 type="submit"
@@ -288,9 +306,17 @@ export default function LogsView({
                           {log.title}
                         </h3>
                       </button>
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Clock size={14} />
-                        Updated {formatDate(new Date(log.updatedAt))}
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Clock size={14} />
+                          Updated {formatDate(new Date(log.updatedAt))}
+                        </span>
+                        {log.attachments && log.attachments.length > 0 && (
+                          <span className="flex items-center gap-1 text-blue-600">
+                            <Paperclip size={14} />
+                            {log.attachments.length}
+                          </span>
+                        )}
                       </div>
                       {log.tags.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
@@ -332,9 +358,17 @@ export default function LogsView({
                           {log.title}
                         </h3>
                       </button>
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Clock size={14} />
-                        Updated {formatDate(new Date(log.updatedAt))}
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Clock size={14} />
+                          Updated {formatDate(new Date(log.updatedAt))}
+                        </span>
+                        {log.attachments && log.attachments.length > 0 && (
+                          <span className="flex items-center gap-1 text-blue-600">
+                            <Paperclip size={14} />
+                            {log.attachments.length}
+                          </span>
+                        )}
                       </div>
                       {log.tags.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
