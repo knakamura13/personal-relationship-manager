@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { Search, Plus, Tag, Clock, User } from "lucide-react";
 import { fuzzySearch, formatDate } from "@/lib/utils";
 
@@ -19,14 +19,23 @@ interface Tag {
   color: string;
 }
 
-export default function ContactsView() {
-  const [contacts, setContacts] = useState<Contact[]>([]);
-  const [tags, setTags] = useState<Tag[]>([]);
+interface ContactsViewProps {
+  contacts: Contact[];
+  tags: Tag[];
+  onContactsUpdate: () => Promise<void>;
+  onTagsUpdate: () => Promise<void>;
+}
+
+export default function ContactsView({
+  contacts,
+  tags,
+  onContactsUpdate,
+  onTagsUpdate,
+}: ContactsViewProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"name" | "updated">("name");
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
-  const [loading, setLoading] = useState(true);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -34,36 +43,6 @@ export default function ContactsView() {
     notes: "",
     tags: [] as string[],
   });
-
-  // Load contacts and tags
-  useEffect(() => {
-    fetchContacts();
-    fetchTags();
-  }, []);
-
-  const fetchContacts = async () => {
-    try {
-      const response = await fetch("/api/contacts");
-      const data = await response.json();
-      setContacts(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error("Failed to fetch contacts:", error);
-      setContacts([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchTags = async () => {
-    try {
-      const response = await fetch("/api/tags");
-      const data = await response.json();
-      setTags(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error("Failed to fetch tags:", error);
-      setTags([]);
-    }
-  };
 
   // Filter and sort contacts
   const filteredAndSortedContacts = useMemo(() => {
@@ -101,7 +80,7 @@ export default function ContactsView() {
       });
 
       if (response.ok) {
-        await fetchContacts();
+        await onContactsUpdate();
         resetForm();
       }
     } catch (error) {
@@ -118,7 +97,7 @@ export default function ContactsView() {
       });
 
       if (response.ok) {
-        await fetchContacts();
+        await onContactsUpdate();
       }
     } catch (error) {
       console.error("Failed to delete contact:", error);
@@ -157,10 +136,6 @@ export default function ContactsView() {
     }));
   };
 
-  if (loading) {
-    return <div className="text-center py-8">Loading contacts...</div>;
-  }
-
   return (
     <div className="space-y-6">
       {/* Header with search and controls */}
@@ -181,7 +156,7 @@ export default function ContactsView() {
           </div>
         </div>
 
-        <div className="flex gap-2 w-full sm:w-auto h-10 justify-between">
+        <div className="flex gap-2 w-full sm:w-auto h-9 justify-between">
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as "name" | "updated")}
@@ -321,7 +296,7 @@ export default function ContactsView() {
       )}
 
       {/* Contacts List */}
-      <div className="space-y-3">
+      <div className="space-y-4">
         {filteredAndSortedContacts.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             <User size={48} className="mx-auto mb-4 opacity-50" />
@@ -364,7 +339,7 @@ export default function ContactsView() {
                       ))}
                     </div>
                   )}
-                  <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
                     <span className="flex items-center gap-1">
                       <Clock size={12} />
                       Updated {formatDate(new Date(contact.updatedAt))}

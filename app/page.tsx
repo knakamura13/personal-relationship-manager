@@ -4,9 +4,33 @@ import { useState } from "react";
 import { Contact, BookOpen } from "lucide-react";
 import ContactsView from "@/components/ContactsView";
 import LogsView from "@/components/LogsView";
+import { useDataCache } from "@/lib/hooks";
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState<"contacts" | "logs">("contacts");
+  const {
+    contacts,
+    logs,
+    tags,
+    isLoading,
+    refreshContacts,
+    refreshLogs,
+    refreshTags,
+  } = useDataCache();
+
+  // Show loading only on initial data fetch
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="text-center">
+          <div className="text-lg font-medium">Loading...</div>
+          <div className="text-sm text-muted-foreground mt-1">
+            Fetching your data
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (activeTab === "logs") {
     return (
@@ -33,7 +57,12 @@ export default function HomePage() {
 
         {/* Logs Content - full width with centered content area */}
         <div className="container mx-auto max-w-4xl">
-          <LogsView />
+          <LogsView
+            logs={logs}
+            tags={tags}
+            onLogsUpdate={refreshLogs}
+            onTagsUpdate={refreshTags}
+          />
         </div>
       </div>
     );
@@ -61,7 +90,12 @@ export default function HomePage() {
         </div>
 
         {/* Content */}
-        <ContactsView />
+        <ContactsView
+          contacts={contacts}
+          tags={tags}
+          onContactsUpdate={refreshContacts}
+          onTagsUpdate={refreshTags}
+        />
       </div>
     </div>
   );

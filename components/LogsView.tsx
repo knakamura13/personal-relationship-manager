@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { Search, Plus, Clock, BookOpen, Tag } from "lucide-react";
 import { fuzzySearch, formatDate, formatDateForInput } from "@/lib/utils";
 
@@ -20,13 +20,22 @@ interface Tag {
   color: string;
 }
 
-export default function LogsView() {
-  const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [tags, setTags] = useState<Tag[]>([]);
+interface LogsViewProps {
+  logs: LogEntry[];
+  tags: Tag[];
+  onLogsUpdate: () => Promise<void>;
+  onTagsUpdate: () => Promise<void>;
+}
+
+export default function LogsView({
+  logs,
+  tags,
+  onLogsUpdate,
+  onTagsUpdate,
+}: LogsViewProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingLog, setEditingLog] = useState<LogEntry | null>(null);
-  const [loading, setLoading] = useState(true);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -35,36 +44,6 @@ export default function LogsView() {
     date: formatDateForInput(new Date()),
     tags: [] as string[],
   });
-
-  // Load logs and tags
-  useEffect(() => {
-    fetchLogs();
-    fetchTags();
-  }, []);
-
-  const fetchLogs = async () => {
-    try {
-      const response = await fetch("/api/logs");
-      const data = await response.json();
-      setLogs(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error("Failed to fetch logs:", error);
-      setLogs([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchTags = async () => {
-    try {
-      const response = await fetch("/api/tags");
-      const data = await response.json();
-      setTags(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error("Failed to fetch tags:", error);
-      setTags([]);
-    }
-  };
 
   // Filter logs (search and reverse chronological order)
   const filteredLogs = useMemo(() => {
@@ -93,7 +72,7 @@ export default function LogsView() {
       });
 
       if (response.ok) {
-        await fetchLogs();
+        await onLogsUpdate();
         resetForm();
       }
     } catch (error) {
@@ -110,7 +89,7 @@ export default function LogsView() {
       });
 
       if (response.ok) {
-        await fetchLogs();
+        await onLogsUpdate();
       }
     } catch (error) {
       console.error("Failed to delete log entry:", error);
@@ -155,10 +134,6 @@ export default function LogsView() {
     }));
   };
 
-  if (loading) {
-    return <div className="text-center py-8">Loading logs...</div>;
-  }
-
   return (
     <div className="space-y-6">
       {/* Header with search and controls */}
@@ -174,7 +149,7 @@ export default function LogsView() {
               placeholder="Search logs..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent"
+              className="w-full max-h-10 pl-10 pr-4 py-2 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent"
             />
           </div>
         </div>
@@ -346,7 +321,7 @@ export default function LogsView() {
                         onClick={() => startEdit(log)}
                         className="text-left w-full group"
                       >
-                        <h3 className="font-semibold text-foreground text-lg mb-2 group-hover:text-primary transition-colors">
+                        <h3 className="font-semibold text-foreground text-lg mb-1 group-hover:text-primary transition-colors">
                           {log.title}
                         </h3>
                       </button>
@@ -390,7 +365,7 @@ export default function LogsView() {
                         onClick={() => startEdit(log)}
                         className="text-left w-full group"
                       >
-                        <h3 className="font-semibold text-foreground text-lg mb-2 group-hover:text-primary transition-colors">
+                        <h3 className="font-semibold text-foreground text-lg mb-1 group-hover:text-primary transition-colors">
                           {log.title}
                         </h3>
                       </button>
