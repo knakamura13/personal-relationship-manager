@@ -13,25 +13,29 @@ export async function PUT(
       return NextResponse.json({ error: "Title is required" }, { status: 400 });
     }
 
+    // Normalize tags to lowercase
+    const normalizedTags =
+      tags && Array.isArray(tags)
+        ? tags.map((tag) => tag.toLowerCase().trim()).filter((tag) => tag)
+        : [];
+
     const logEntry = await prisma.logEntry.update({
       where: { id: params.id },
       data: {
         title: title.trim(),
         content: content?.trim() || "",
         date: date ? new Date(date) : new Date(),
-        tags: JSON.stringify(tags || []),
+        tags: JSON.stringify(normalizedTags),
       },
     });
 
     // Update tags table with new tags
-    if (tags && Array.isArray(tags)) {
-      for (const tagName of tags) {
-        await prisma.tag.upsert({
-          where: { name: tagName },
-          create: { name: tagName },
-          update: {},
-        });
-      }
+    for (const tagName of normalizedTags) {
+      await prisma.tag.upsert({
+        where: { name: tagName },
+        create: { name: tagName },
+        update: {},
+      });
     }
 
     return NextResponse.json({

@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { Search, Plus, Clock, BookOpen, Tag } from "lucide-react";
 import { fuzzySearch, formatDate, formatDateForInput } from "@/lib/utils";
+import TagInput from "./TagInput";
 
 interface LogEntry {
   id: string;
@@ -120,10 +121,14 @@ export default function LogsView({
   };
 
   const addTag = (tagName: string) => {
-    if (tagName && !formData.tags.includes(tagName)) {
+    const normalizedTagName = tagName.toLowerCase().trim();
+    if (
+      normalizedTagName &&
+      !formData.tags.some((tag) => tag.toLowerCase() === normalizedTagName)
+    ) {
       setFormData((prev) => ({
         ...prev,
-        tags: [...prev.tags, tagName],
+        tags: [...prev.tags, normalizedTagName],
       }));
     }
   };
@@ -214,56 +219,13 @@ export default function LogsView({
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">Tags</label>
-              <div className="flex flex-wrap gap-2 mb-2">
-                {formData.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary rounded-md text-xs border border-primary/20"
-                  >
-                    {tag}
-                    <button
-                      type="button"
-                      onClick={() => removeTag(tag)}
-                      className="hover:text-primary/70"
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
-              </div>
-
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Add a tag..."
-                  onKeyPress={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      addTag(e.currentTarget.value);
-                      e.currentTarget.value = "";
-                    }
-                  }}
-                  className="flex-1 px-3 py-2 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent text-sm"
-                />
-              </div>
-
-              {tags.length > 0 && (
-                <div className="flex flex-wrap gap-1 mt-2">
-                  {tags.map((tag) => (
-                    <button
-                      key={tag.id}
-                      type="button"
-                      onClick={() => addTag(tag.name)}
-                      className="px-2 py-1 bg-muted text-muted-foreground rounded text-xs hover:bg-accent hover:text-accent-foreground transition-colors"
-                    >
-                      {tag.name}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            <TagInput
+              selectedTags={formData.tags}
+              availableTags={tags}
+              onAddTag={addTag}
+              onRemoveTag={removeTag}
+              placeholder="Add a tag..."
+            />
 
             <div className="flex gap-2 pt-4">
               <button
@@ -335,7 +297,7 @@ export default function LogsView({
                           {log.tags.map((tag) => (
                             <span
                               key={tag}
-                              className="inline-flex items-center px-2 py-1 bg-primary/10 text-primary rounded-md text-xs border border-primary/20"
+                              className="inline-flex items-center px-2 py-1 bg-primary/10 text-primary rounded-md text-xs border border-primary/20 lowercase"
                             >
                               <Tag size={10} className="mr-1" />
                               {tag}
@@ -379,7 +341,7 @@ export default function LogsView({
                           {log.tags.map((tag) => (
                             <span
                               key={tag}
-                              className="inline-flex items-center px-2 py-1 bg-primary/10 text-primary rounded-md text-xs border border-primary/20"
+                              className="inline-flex items-center px-2 py-1 bg-primary/10 text-primary rounded-md text-xs border border-primary/20 lowercase"
                             >
                               <Tag size={10} className="mr-1" />
                               {tag}

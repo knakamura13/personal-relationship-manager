@@ -34,7 +34,8 @@ export default function HomePage() {
 
   if (activeTab === "logs") {
     return (
-      <div className="px-4 py-6">
+      // Logs view
+      <div className="px-4 py-6 pb-20">
         {/* Tab Navigation - centered */}
         <div className="container mx-auto max-w-4xl">
           <div className="flex space-x-1 mb-6 bg-muted p-1 rounded-lg border border-border">
@@ -69,7 +70,8 @@ export default function HomePage() {
   }
 
   return (
-    <div className="px-4 py-6">
+    // Contacts view
+    <div className="px-4 py-6 pb-20">
       <div className="container mx-auto max-w-4xl">
         {/* Tab Navigation */}
         <div className="flex space-x-1 mb-6 bg-muted p-1 rounded-lg border border-border">
