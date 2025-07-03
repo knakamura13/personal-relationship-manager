@@ -125,8 +125,6 @@ export function useDataCache() {
   }, [fetchAllData]);
 
   const refreshContacts = useCallback(async () => {
-    console.log("refreshContacts called!");
-    console.trace("Stack trace for refreshContacts call:");
     await fetchContacts();
   }, [fetchContacts]);
 

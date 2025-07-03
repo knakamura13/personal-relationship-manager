@@ -67,14 +67,6 @@ export default function ContactsView({
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
 
-  // Debug logging for form state changes
-  useEffect(() => {
-    console.log("showAddForm changed to:", showAddForm);
-  }, [showAddForm]);
-
-  useEffect(() => {
-    console.log("editingContact changed to:", editingContact?.id || null);
-  }, [editingContact]);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [previewAttachment, setPreviewAttachment] = useState<Attachment | null>(
     null
@@ -151,8 +143,6 @@ export default function ContactsView({
   };
 
   const resetForm = () => {
-    console.log("resetForm called - closing edit form");
-    console.trace("Stack trace for resetForm call:");
     setFormData({ name: "", notes: "", tags: [], avatar: null });
     setShowAddForm(false);
     setEditingContact(null);
@@ -222,21 +212,15 @@ export default function ContactsView({
   };
 
   const handleAttachmentPreview = async (attachment: Attachment | null) => {
-    console.log("handleAttachmentPreview called with:", attachment);
-
     if (!attachment || !attachment.mimeType.startsWith("image/")) {
-      console.log("Invalid attachment or not an image");
       closeAttachmentPreview();
       return;
     }
 
     try {
-      console.log("Setting preview attachment:", attachment.id);
       setPreviewAttachment(attachment);
 
-      console.log("Fetching attachment from API...");
       const response = await fetch(`/api/attachments/${attachment.id}`);
-      console.log("API response status:", response.status);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -247,9 +231,7 @@ export default function ContactsView({
       }
 
       const blob = await response.blob();
-      console.log("Got blob, creating URL...");
       const url = URL.createObjectURL(blob);
-      console.log("Setting preview image URL:", url);
       setPreviewImageUrl(url);
     } catch (error) {
       console.error("Preview error:", error);
@@ -269,6 +251,11 @@ export default function ContactsView({
     if (e.target === e.currentTarget) {
       closeAttachmentPreview();
     }
+  };
+
+  const handleAttachmentsUpdate = async () => {
+    // Update the main contacts list
+    await onContactsUpdate();
   };
 
   const triggerFileUpload = () => {
@@ -311,6 +298,16 @@ export default function ContactsView({
       }
     };
   }, [previewImageUrl]);
+
+  // Update editingContact when contacts array changes (after attachment operations)
+  useEffect(() => {
+    if (editingContact) {
+      const updatedContact = contacts.find((c) => c.id === editingContact.id);
+      if (updatedContact) {
+        setEditingContact(updatedContact);
+      }
+    }
+  }, [contacts, editingContact?.id]);
 
   return (
     <div className="space-y-6">
@@ -459,7 +456,7 @@ export default function ContactsView({
               <AttachmentManager
                 attachments={editingContact.attachments || []}
                 contactId={editingContact.id}
-                onAttachmentsUpdate={onContactsUpdate}
+                onAttachmentsUpdate={handleAttachmentsUpdate}
                 onPreview={handleAttachmentPreview}
                 key={editingContact.id} // Force re-render when editing different contact
               />

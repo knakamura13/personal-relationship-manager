@@ -38,17 +38,6 @@ export default function AttachmentManager({
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Debug logging for component lifecycle
-  useEffect(() => {
-    console.log(
-      "AttachmentManager mounted/updated for:",
-      contactId || logEntryId
-    );
-    return () => {
-      console.log("AttachmentManager unmounted for:", contactId || logEntryId);
-    };
-  }, [contactId, logEntryId]);
-
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return "0 Bytes";
     const k = 1024;
@@ -156,15 +145,9 @@ export default function AttachmentManager({
   };
 
   const handlePreview = (attachment: Attachment) => {
-    console.log(
-      "AttachmentManager: handlePreview called for:",
-      attachment.filename
-    );
     if (!attachment.mimeType.startsWith("image/")) {
-      console.log("AttachmentManager: Not an image, skipping preview");
       return;
     }
-    console.log("AttachmentManager: Calling onPreview with attachment");
     onPreview?.(attachment);
   };
 
