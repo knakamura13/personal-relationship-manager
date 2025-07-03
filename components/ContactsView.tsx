@@ -179,7 +179,7 @@ export default function ContactsView() {
           </div>
         </div>
 
-        <div className="flex gap-2 w-full sm:w-auto h-10">
+        <div className="flex gap-2 w-full sm:w-auto h-10 justify-between">
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as "name" | "updated")}

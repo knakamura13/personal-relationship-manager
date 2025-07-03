@@ -9,7 +9,13 @@ export async function GET() {
       },
     });
 
-    return NextResponse.json(logs);
+    // Parse tags from JSON string
+    const logsWithParsedTags = logs.map((log) => ({
+      ...log,
+      tags: JSON.parse(log.tags || "[]"),
+    }));
+
+    return NextResponse.json(logsWithParsedTags);
   } catch (error) {
     console.error("Error fetching logs:", error);
     return NextResponse.json(
@@ -22,7 +28,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { title, content, date } = body;
+    const { title, content, date, tags } = body;
 
     if (!title?.trim()) {
       return NextResponse.json({ error: "Title is required" }, { status: 400 });
@@ -33,10 +39,28 @@ export async function POST(request: NextRequest) {
         title: title.trim(),
         content: content?.trim() || "",
         date: date ? new Date(date) : new Date(),
+        tags: JSON.stringify(tags || []),
       },
     });
 
-    return NextResponse.json(logEntry, { status: 201 });
+    // Update tags table with new tags
+    if (tags && Array.isArray(tags)) {
+      for (const tagName of tags) {
+        await prisma.tag.upsert({
+          where: { name: tagName },
+          create: { name: tagName },
+          update: {},
+        });
+      }
+    }
+
+    return NextResponse.json(
+      {
+        ...logEntry,
+        tags: JSON.parse(logEntry.tags || "[]"),
+      },
+      { status: 201 }
+    );
   } catch (error) {
     console.error("Error creating log entry:", error);
     return NextResponse.json(

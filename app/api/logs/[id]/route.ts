@@ -7,7 +7,7 @@ export async function PUT(
 ) {
   try {
     const body = await request.json();
-    const { title, content, date } = body;
+    const { title, content, date, tags } = body;
 
     if (!title?.trim()) {
       return NextResponse.json({ error: "Title is required" }, { status: 400 });
@@ -19,10 +19,25 @@ export async function PUT(
         title: title.trim(),
         content: content?.trim() || "",
         date: date ? new Date(date) : new Date(),
+        tags: JSON.stringify(tags || []),
       },
     });
 
-    return NextResponse.json(logEntry);
+    // Update tags table with new tags
+    if (tags && Array.isArray(tags)) {
+      for (const tagName of tags) {
+        await prisma.tag.upsert({
+          where: { name: tagName },
+          create: { name: tagName },
+          update: {},
+        });
+      }
+    }
+
+    return NextResponse.json({
+      ...logEntry,
+      tags: JSON.parse(logEntry.tags || "[]"),
+    });
   } catch (error) {
     console.error("Error updating log entry:", error);
     return NextResponse.json(

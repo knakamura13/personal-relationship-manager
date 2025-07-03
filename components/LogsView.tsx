@@ -1,20 +1,28 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Search, Plus, Clock, BookOpen } from "lucide-react";
+import { Search, Plus, Clock, BookOpen, Tag } from "lucide-react";
 import { fuzzySearch, formatDate, formatDateForInput } from "@/lib/utils";
 
 interface LogEntry {
   id: string;
   title: string;
   content: string;
+  tags: string[];
   date: string;
   createdAt: string;
   updatedAt: string;
 }
 
+interface Tag {
+  id: string;
+  name: string;
+  color: string;
+}
+
 export default function LogsView() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingLog, setEditingLog] = useState<LogEntry | null>(null);
@@ -25,11 +33,13 @@ export default function LogsView() {
     title: "",
     content: "",
     date: formatDateForInput(new Date()),
+    tags: [] as string[],
   });
 
-  // Load logs
+  // Load logs and tags
   useEffect(() => {
     fetchLogs();
+    fetchTags();
   }, []);
 
   const fetchLogs = async () => {
@@ -44,10 +54,20 @@ export default function LogsView() {
     }
   };
 
+  const fetchTags = async () => {
+    try {
+      const response = await fetch("/api/tags");
+      const data = await response.json();
+      setTags(data);
+    } catch (error) {
+      console.error("Failed to fetch tags:", error);
+    }
+  };
+
   // Filter logs (search and reverse chronological order)
   const filteredLogs = useMemo(() => {
     let filtered = logs.filter((log) => {
-      const searchText = `${log.title} ${log.content}`;
+      const searchText = `${log.title} ${log.content} ${log.tags.join(" ")}`;
       return fuzzySearch(searchQuery, searchText);
     });
 
@@ -100,6 +120,7 @@ export default function LogsView() {
       title: "",
       content: "",
       date: formatDateForInput(new Date()),
+      tags: [],
     });
     setShowAddForm(false);
     setEditingLog(null);
@@ -110,9 +131,26 @@ export default function LogsView() {
       title: log.title,
       content: log.content,
       date: formatDateForInput(new Date(log.date)),
+      tags: log.tags,
     });
     setEditingLog(log);
     setShowAddForm(true);
+  };
+
+  const addTag = (tagName: string) => {
+    if (tagName && !formData.tags.includes(tagName)) {
+      setFormData((prev) => ({
+        ...prev,
+        tags: [...prev.tags, tagName],
+      }));
+    }
+  };
+
+  const removeTag = (tagName: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      tags: prev.tags.filter((tag) => tag !== tagName),
+    }));
   };
 
   if (loading) {
@@ -198,6 +236,57 @@ export default function LogsView() {
               />
             </div>
 
+            <div>
+              <label className="block text-sm font-medium mb-1">Tags</label>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {formData.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary rounded-md text-xs border border-primary/20"
+                  >
+                    {tag}
+                    <button
+                      type="button"
+                      onClick={() => removeTag(tag)}
+                      className="hover:text-primary/70"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Add a tag..."
+                  onKeyPress={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addTag(e.currentTarget.value);
+                      e.currentTarget.value = "";
+                    }
+                  }}
+                  className="flex-1 px-3 py-2 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent text-sm"
+                />
+              </div>
+
+              {tags.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {tags.map((tag) => (
+                    <button
+                      key={tag.id}
+                      type="button"
+                      onClick={() => addTag(tag.name)}
+                      className="px-2 py-1 bg-muted text-muted-foreground rounded text-xs hover:bg-accent hover:text-accent-foreground transition-colors"
+                    >
+                      {tag.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="flex gap-2 pt-4">
               <button
                 type="submit"
@@ -263,6 +352,19 @@ export default function LogsView() {
                         <Clock size={14} />
                         Updated {formatDate(new Date(log.updatedAt))}
                       </div>
+                      {log.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {log.tags.map((tag) => (
+                            <span
+                              key={tag}
+                              className="inline-flex items-center px-2 py-1 bg-primary/10 text-primary rounded-md text-xs border border-primary/20"
+                            >
+                              <Tag size={10} className="mr-1" />
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                       {log.content && (
                         <div className="prose dark:prose-invert max-w-none mt-3">
                           <p className="text-foreground/80 whitespace-pre-wrap leading-relaxed">
@@ -294,6 +396,19 @@ export default function LogsView() {
                         <Clock size={14} />
                         Updated {formatDate(new Date(log.updatedAt))}
                       </div>
+                      {log.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {log.tags.map((tag) => (
+                            <span
+                              key={tag}
+                              className="inline-flex items-center px-2 py-1 bg-primary/10 text-primary rounded-md text-xs border border-primary/20"
+                            >
+                              <Tag size={10} className="mr-1" />
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                       {log.content && (
                         <div className="prose dark:prose-invert max-w-none mt-3">
                           <p className="text-foreground/80 whitespace-pre-wrap leading-relaxed">
