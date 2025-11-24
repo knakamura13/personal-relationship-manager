@@ -41,4 +41,9 @@ next-env.d.ts
 /prisma/prod.db
 *.db
 *.db-journal
-/prisma/migrations 
+/prisma/migrations
+
+# backups
+/backups/
+backup.sql
+*.dump 
