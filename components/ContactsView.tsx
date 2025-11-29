@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
+import Image from "next/image";
 import {
   Search,
   Plus,
@@ -11,18 +12,15 @@ import {
   X,
   Paperclip,
 } from "lucide-react";
-import { fuzzySearch, formatDate, compressImageToBase64 } from "@/lib/utils";
+import {
+  fuzzySearch,
+  formatDate,
+  formatFileSize,
+  compressImageToBase64,
+} from "@/lib/utils";
 
 import TagInput from "./TagInput";
 import AttachmentManager from "./AttachmentManager";
-
-const formatFileSize = (bytes: number): string => {
-  if (bytes === 0) return "0 Bytes";
-  const k = 1024;
-  const sizes = ["Bytes", "KB", "MB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-};
 
 interface Attachment {
   id: string;
@@ -118,6 +116,7 @@ export default function ContactsView({
 
       if (response.ok) {
         await onContactsUpdate();
+        await onTagsUpdate();
         resetForm();
       }
     } catch (error) {
@@ -239,13 +238,13 @@ export default function ContactsView({
     }
   };
 
-  const closeAttachmentPreview = () => {
+  const closeAttachmentPreview = useCallback(() => {
     if (previewImageUrl) {
       URL.revokeObjectURL(previewImageUrl);
     }
     setPreviewImageUrl(null);
     setPreviewAttachment(null);
-  };
+  }, [previewImageUrl]);
 
   const handlePreviewModalClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
@@ -288,7 +287,7 @@ export default function ContactsView({
       document.removeEventListener("keydown", handleKeyDown, true);
       document.body.style.overflow = "unset";
     };
-  }, [showAvatarModal, previewAttachment]);
+  }, [showAvatarModal, previewAttachment, closeAttachmentPreview]);
 
   // Cleanup preview image URL on unmount
   useEffect(() => {
@@ -307,7 +306,7 @@ export default function ContactsView({
         setEditingContact(updatedContact);
       }
     }
-  }, [contacts, editingContact?.id]);
+  }, [contacts, editingContact]);
 
   return (
     <div className="space-y-6">
@@ -381,9 +380,11 @@ export default function ContactsView({
               <div className="flex items-center gap-4">
                 {formData.avatar ? (
                   <div className="relative">
-                    <img
+                    <Image
                       src={formData.avatar}
                       alt="Avatar preview"
+                      width={64}
+                      height={64}
                       className="w-16 h-16 rounded-full object-cover border-2 border-border cursor-pointer hover:opacity-80 transition-opacity"
                       onClick={openAvatarModal}
                       title="Click to view full size"
@@ -514,9 +515,11 @@ export default function ContactsView({
               >
                 <div className="flex items-start gap-3">
                   {contact.avatar ? (
-                    <img
+                    <Image
                       src={contact.avatar}
                       alt={`${contact.name}'s avatar`}
+                      width={48}
+                      height={48}
                       className="w-12 h-12 rounded-full object-cover border-2 border-border flex-shrink-0"
                     />
                   ) : (
@@ -574,9 +577,10 @@ export default function ContactsView({
           onClick={closeAvatarModal}
         >
           <div className="relative max-w-3xl max-h-full">
-            <img
+            <Image
               src={formData.avatar}
               alt="Avatar full size"
+              fill
               className="max-w-full max-h-full object-contain rounded-lg"
               onClick={(e) => e.stopPropagation()}
             />
@@ -599,9 +603,10 @@ export default function ContactsView({
         >
           <div className="relative max-w-4xl max-h-full">
             {previewImageUrl ? (
-              <img
+              <Image
                 src={previewImageUrl}
                 alt={previewAttachment.filename}
+                fill
                 className="max-w-full max-h-full object-contain rounded-lg"
                 onClick={(e) => e.stopPropagation()}
               />

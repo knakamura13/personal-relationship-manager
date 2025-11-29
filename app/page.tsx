@@ -13,9 +13,11 @@ export default function HomePage() {
     logs,
     tags,
     isLoading,
+    error,
     refreshContacts,
     refreshLogs,
     refreshTags,
+    refreshAll,
   } = useDataCache();
 
   // Show loading only on initial data fetch
@@ -36,6 +38,26 @@ export default function HomePage() {
     return (
       // Logs view
       <div className="px-4 py-6 pb-20">
+        {error && (
+          <div className="container mx-auto max-w-4xl mb-4">
+            <div className="flex items-start justify-between gap-3 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+              <div>
+                <div className="font-medium">
+                  We couldn&apos;t load some data.
+                </div>
+                <div className="text-destructive/80">
+                  Please retry or check your connection.
+                </div>
+              </div>
+              <button
+                onClick={refreshAll}
+                className="shrink-0 rounded-md border border-destructive/40 bg-destructive text-destructive-foreground px-3 py-1 text-xs font-semibold hover:bg-destructive/90"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        )}
         {/* Tab Navigation - centered */}
         <div className="container mx-auto max-w-4xl">
           <div className="flex space-x-1 mb-6 bg-muted p-1 rounded-lg border border-border">
@@ -72,6 +94,26 @@ export default function HomePage() {
   return (
     // Contacts view
     <div className="px-4 py-6 pb-20">
+      {error && (
+        <div className="container mx-auto max-w-4xl mb-4">
+          <div className="flex items-start justify-between gap-3 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            <div>
+              <div className="font-medium">
+                We couldn&apos;t load some data.
+              </div>
+              <div className="text-destructive/80">
+                Please retry or check your connection.
+              </div>
+            </div>
+            <button
+              onClick={refreshAll}
+              className="shrink-0 rounded-md border border-destructive/40 bg-destructive text-destructive-foreground px-3 py-1 text-xs font-semibold hover:bg-destructive/90"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      )}
       <div className="container mx-auto max-w-4xl">
         {/* Tab Navigation */}
         <div className="flex space-x-1 mb-6 bg-muted p-1 rounded-lg border border-border">

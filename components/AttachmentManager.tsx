@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useState, useRef } from "react";
 import {
   Upload,
   X,
@@ -10,6 +10,7 @@ import {
   FileText,
   Archive,
 } from "lucide-react";
+import { formatFileSize } from "@/lib/utils";
 
 interface Attachment {
   id: string;
@@ -38,17 +39,9 @@ export default function AttachmentManager({
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return "0 Bytes";
-    const k = 1024;
-    const sizes = ["Bytes", "KB", "MB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-  };
-
   const getFileIcon = (mimeType: string) => {
     if (mimeType.startsWith("image/")) {
-      return <Image size={16} className="text-blue-500" />;
+      return <Image size={16} className="text-blue-500" aria-hidden="true" />; // eslint-disable-line jsx-a11y/alt-text
     } else if (mimeType === "application/pdf") {
       return <FileText size={16} className="text-red-500" />;
     } else if (

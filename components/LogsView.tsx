@@ -1,16 +1,14 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
+import Image from "next/image";
 import { Search, Plus, Clock, BookOpen, Tag, Paperclip, X } from "lucide-react";
-import { fuzzySearch, formatDate, formatDateForInput } from "@/lib/utils";
-
-const formatFileSize = (bytes: number): string => {
-  if (bytes === 0) return "0 Bytes";
-  const k = 1024;
-  const sizes = ["Bytes", "KB", "MB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-};
+import {
+  fuzzySearch,
+  formatDate,
+  formatDateForInput,
+  formatFileSize,
+} from "@/lib/utils";
 import TagInput from "./TagInput";
 import AttachmentManager from "./AttachmentManager";
 
@@ -56,14 +54,6 @@ export default function LogsView({
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingLog, setEditingLog] = useState<LogEntry | null>(null);
 
-  // Debug logging for form state changes
-  useEffect(() => {
-    console.log("LogsView: showAddForm changed to:", showAddForm);
-  }, [showAddForm]);
-
-  useEffect(() => {
-    console.log("LogsView: editingLog changed to:", editingLog?.id || null);
-  }, [editingLog]);
   const [previewAttachment, setPreviewAttachment] = useState<Attachment | null>(
     null
   );
@@ -105,6 +95,7 @@ export default function LogsView({
 
       if (response.ok) {
         await onLogsUpdate();
+        await onTagsUpdate();
         resetForm();
       }
     } catch (error) {
@@ -173,21 +164,15 @@ export default function LogsView({
   };
 
   const handleAttachmentPreview = async (attachment: Attachment | null) => {
-    console.log("LogsView: handleAttachmentPreview called with:", attachment);
-
     if (!attachment || !attachment.mimeType.startsWith("image/")) {
-      console.log("LogsView: Invalid attachment or not an image");
       closeAttachmentPreview();
       return;
     }
 
     try {
-      console.log("LogsView: Setting preview attachment:", attachment.id);
       setPreviewAttachment(attachment);
 
-      console.log("LogsView: Fetching attachment from API...");
       const response = await fetch(`/api/attachments/${attachment.id}`);
-      console.log("LogsView: API response status:", response.status);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -198,9 +183,7 @@ export default function LogsView({
       }
 
       const blob = await response.blob();
-      console.log("LogsView: Got blob, creating URL...");
       const url = URL.createObjectURL(blob);
-      console.log("LogsView: Setting preview image URL:", url);
       setPreviewImageUrl(url);
     } catch (error) {
       console.error("LogsView: Preview error:", error);
@@ -208,13 +191,13 @@ export default function LogsView({
     }
   };
 
-  const closeAttachmentPreview = () => {
+  const closeAttachmentPreview = useCallback(() => {
     if (previewImageUrl) {
       URL.revokeObjectURL(previewImageUrl);
     }
     setPreviewImageUrl(null);
     setPreviewAttachment(null);
-  };
+  }, [previewImageUrl]);
 
   const handlePreviewModalClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
@@ -241,7 +224,7 @@ export default function LogsView({
       document.removeEventListener("keydown", handleKeyDown, true);
       document.body.style.overflow = "unset";
     };
-  }, [previewAttachment]);
+  }, [previewAttachment, closeAttachmentPreview]);
 
   // Cleanup preview image URL on unmount
   useEffect(() => {
@@ -251,6 +234,16 @@ export default function LogsView({
       }
     };
   }, [previewImageUrl]);
+
+  // Keep editing log in sync after attachments/log updates
+  useEffect(() => {
+    if (editingLog) {
+      const updatedLog = logs.find((l) => l.id === editingLog.id);
+      if (updatedLog) {
+        setEditingLog(updatedLog);
+      }
+    }
+  }, [logs, editingLog?.id, editingLog]);
 
   return (
     <div className="space-y-6">
@@ -511,9 +504,10 @@ export default function LogsView({
         >
           <div className="relative max-w-4xl max-h-full">
             {previewImageUrl ? (
-              <img
+              <Image
                 src={previewImageUrl}
                 alt={previewAttachment.filename}
+                fill
                 className="max-w-full max-h-full object-contain rounded-lg"
                 onClick={(e) => e.stopPropagation()}
               />
