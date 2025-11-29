@@ -5,6 +5,7 @@ import {
   useMemo,
   useEffect,
   useCallback,
+  useRef,
   type MouseEvent,
 } from "react";
 import Image from "next/image";
@@ -59,6 +60,8 @@ export default function LogsView({
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingLog, setEditingLog] = useState<LogEntry | null>(null);
+  const [shouldScrollToEdit, setShouldScrollToEdit] = useState(false);
+  const activeCardRef = useRef<HTMLDivElement | null>(null);
   const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
 
   const [previewAttachment, setPreviewAttachment] = useState<Attachment | null>(
@@ -67,12 +70,14 @@ export default function LogsView({
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
 
   // Form state
-  const [formData, setFormData] = useState({
+  const createEmptyForm = () => ({
     title: "",
     content: "",
     date: formatDateForInput(new Date()),
     tags: [] as string[],
   });
+
+  const [formData, setFormData] = useState(createEmptyForm);
 
   // Filter logs (search and reverse chronological order)
   const filteredLogs = useMemo(() => {
@@ -135,15 +140,11 @@ export default function LogsView({
   };
 
   const resetForm = () => {
-    console.log("LogsView: resetForm called - closing edit form");
-    setFormData({
-      title: "",
-      content: "",
-      date: formatDateForInput(new Date()),
-      tags: [],
-    });
+    setFormData(createEmptyForm());
     setShowAddForm(false);
     setEditingLog(null);
+    setShouldScrollToEdit(false);
+    activeCardRef.current = null;
   };
 
   const startEdit = (log: LogEntry) => {
@@ -154,7 +155,8 @@ export default function LogsView({
       tags: log.tags,
     });
     setEditingLog(log);
-    setShowAddForm(true);
+    setShowAddForm(false);
+    setShouldScrollToEdit(true);
   };
 
   const addTag = (tagName: string) => {
@@ -270,6 +272,140 @@ export default function LogsView({
     }
   }, [logs, editingLog?.id, editingLog]);
 
+  useEffect(() => {
+    if (!shouldScrollToEdit || !editingLog) return;
+
+    const rafId = requestAnimationFrame(() => {
+      const targetElement = activeCardRef.current;
+      if (!targetElement) {
+        setShouldScrollToEdit(false);
+        return;
+      }
+
+      const header = document.querySelector("header");
+      const headerHeight = header
+        ? Number(header.getBoundingClientRect().height) || 0
+        : 0;
+
+      const docStyle = getComputedStyle(document.documentElement);
+      const scrollPaddingTop =
+        parseFloat(docStyle.getPropertyValue("scroll-padding-top")) || 0;
+
+      const gap = 8;
+      const offset = Math.max(headerHeight, scrollPaddingTop) + gap;
+      const topPosition =
+        window.scrollY + targetElement.getBoundingClientRect().top - offset;
+
+      window.scrollTo({
+        top: Math.max(topPosition, 0),
+        behavior: "smooth",
+      });
+
+      setShouldScrollToEdit(false);
+    });
+
+    return () => cancelAnimationFrame(rafId);
+  }, [shouldScrollToEdit, editingLog]);
+
+  const renderLogForm = (variant: "add" | "edit") => (
+    <div
+      className={`bg-card border border-border rounded-lg p-6 shadow-sm ${
+        variant === "edit" ? "mt-4" : ""
+      }`}
+    >
+      <h3 className="text-lg font-semibold mb-4">
+        {editingLog ? "Edit Log Entry" : "Add New Log Entry"}
+      </h3>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium mb-1">Entry</label>
+          <input
+            type="text"
+            value={formData.title}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, title: e.target.value }))
+            }
+            className="w-full px-3 py-2 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent"
+            placeholder="Brief summary of this log entry..."
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1">Date</label>
+          <input
+            type="date"
+            value={formData.date}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, date: e.target.value }))
+            }
+            className="w-full px-3 py-2 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            Details (optional)
+          </label>
+          <textarea
+            value={formData.content}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, content: e.target.value }))
+            }
+            rows={4}
+            className="w-full px-3 py-2 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent"
+            placeholder="Optional additional details or context..."
+          />
+        </div>
+
+        <TagInput
+          selectedTags={formData.tags}
+          availableTags={tags}
+          onAddTag={addTag}
+          onRemoveTag={removeTag}
+          placeholder="Add a tag..."
+        />
+
+        {editingLog && (
+          <AttachmentManager
+            attachments={editingLog.attachments || []}
+            logEntryId={editingLog.id}
+            onAttachmentsUpdate={onLogsUpdate}
+            onPreview={handleAttachmentPreview}
+            key={editingLog.id}
+          />
+        )}
+
+        <div className="flex gap-2 pt-4">
+          <button
+            type="submit"
+            className="px-3 sm:px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm"
+          >
+            Save Entry
+          </button>
+          <button
+            type="button"
+            onClick={resetForm}
+            className="px-3 sm:px-4 py-2 border border-input text-foreground rounded-lg hover:bg-accent transition-colors text-sm"
+          >
+            Cancel
+          </button>
+          {editingLog && (
+            <button
+              type="button"
+              onClick={() => handleDelete(editingLog.id)}
+              className="px-3 sm:px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 transition-colors ml-auto text-sm"
+            >
+              Delete
+            </button>
+          )}
+        </div>
+      </form>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       {/* Header with search and controls */}
@@ -306,7 +442,13 @@ export default function LogsView({
         </div>
 
         <button
-          onClick={() => setShowAddForm(true)}
+          onClick={() => {
+            setEditingLog(null);
+            setFormData(createEmptyForm());
+            setShowAddForm(true);
+            setShouldScrollToEdit(false);
+            activeCardRef.current = null;
+          }}
           className="flex items-center gap-2 px-4 py-2 h-10 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm w-full sm:w-auto justify-center"
         >
           <Plus size={16} />
@@ -315,100 +457,7 @@ export default function LogsView({
       </div>
 
       {/* Add/Edit Form */}
-      {showAddForm && (
-        <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
-          <h3 className="text-lg font-semibold mb-4">
-            {editingLog ? "Edit Log Entry" : "Add New Log Entry"}
-          </h3>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Entry</label>
-              <input
-                type="text"
-                value={formData.title}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, title: e.target.value }))
-                }
-                className="w-full px-3 py-2 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent"
-                placeholder="Brief summary of this log entry..."
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Date</label>
-              <input
-                type="date"
-                value={formData.date}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, date: e.target.value }))
-                }
-                className="w-full px-3 py-2 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Details (optional)
-              </label>
-              <textarea
-                value={formData.content}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, content: e.target.value }))
-                }
-                rows={4}
-                className="w-full px-3 py-2 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent"
-                placeholder="Optional additional details or context..."
-              />
-            </div>
-
-            <TagInput
-              selectedTags={formData.tags}
-              availableTags={tags}
-              onAddTag={addTag}
-              onRemoveTag={removeTag}
-              placeholder="Add a tag..."
-            />
-
-            {editingLog && (
-              <AttachmentManager
-                attachments={editingLog.attachments || []}
-                logEntryId={editingLog.id}
-                onAttachmentsUpdate={onLogsUpdate}
-                onPreview={handleAttachmentPreview}
-                key={editingLog.id}
-              />
-            )}
-
-            <div className="flex gap-2 pt-4">
-              <button
-                type="submit"
-                className="px-3 sm:px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm"
-              >
-                Save Entry
-              </button>
-              <button
-                type="button"
-                onClick={resetForm}
-                className="px-3 sm:px-4 py-2 border border-input text-foreground rounded-lg hover:bg-accent transition-colors text-sm"
-              >
-                Cancel
-              </button>
-              {editingLog && (
-                <button
-                  type="button"
-                  onClick={() => handleDelete(editingLog.id)}
-                  className="px-3 sm:px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 transition-colors ml-auto text-sm"
-                >
-                  Delete
-                </button>
-              )}
-            </div>
-          </form>
-        </div>
-      )}
+      {showAddForm && renderLogForm("add")}
 
       {/* Logs List */}
       <div>
@@ -425,134 +474,146 @@ export default function LogsView({
         ) : (
           <div className="xl:relative xl:-ml-32 xl:pl-32">
             <div className="space-y-4">
-              {filteredLogs.map((log) => (
-                <div key={log.id}>
-                  {/* Mobile/tablet layout (xl and below) - dates inside container */}
-                  <div className="flex gap-6 hover:bg-muted/50 transition-colors rounded-lg xl:hidden">
-                    <div className="flex-shrink-0 w-20 text-right mt-1">
-                      <div className="text-sm font-medium text-muted-foreground whitespace-nowrap">
-                        {formatDate(new Date(log.date))}
+              {filteredLogs.map((log) => {
+                const isEditing = editingLog?.id === log.id;
+
+                return (
+                  <div
+                    key={log.id}
+                    className={`bg-card border border-border rounded-lg p-4 hover:shadow-md transition-all duration-200 hover:border-border/80 ${
+                      isEditing ? "ring-1 ring-primary/40" : ""
+                    }`}
+                    ref={isEditing ? activeCardRef : undefined}
+                  >
+                    {/* Mobile/tablet layout (xl and below) */}
+                    <div className="flex gap-6 xl:hidden">
+                      <div className="flex-shrink-0 w-20 text-right mt-1">
+                        <div className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+                          {formatDate(new Date(log.date))}
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <button
-                        onClick={() => startEdit(log)}
-                        className="text-left w-full group"
-                      >
-                        <h3 className="font-semibold text-foreground text-lg mb-1 group-hover:text-primary transition-colors">
-                          {log.title}
-                        </h3>
-                      </button>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Clock size={14} />
-                          Updated {formatDate(new Date(log.updatedAt))}
-                        </span>
-                        {log.attachments && log.attachments.length > 0 && (
-                          <span className="flex items-center gap-1 text-blue-600">
-                            <Paperclip size={14} />
-                            {log.attachments.length}
+                      <div className="flex-1 min-w-0">
+                        <button
+                          onClick={() => startEdit(log)}
+                          className="text-left w-full group"
+                        >
+                          <h3 className="font-semibold text-foreground text-lg mb-1 group-hover:text-primary transition-colors">
+                            {log.title}
+                          </h3>
+                        </button>
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <Clock size={14} />
+                            Updated {formatDate(new Date(log.updatedAt))}
                           </span>
+                          {log.attachments && log.attachments.length > 0 && (
+                            <span className="flex items-center gap-1 text-blue-600">
+                              <Paperclip size={14} />
+                              {log.attachments.length}
+                            </span>
+                          )}
+                        </div>
+                        {log.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {log.tags.map((tag) => {
+                              const normalizedTag = tag.toLowerCase();
+                              const isActive = activeTagFilter === normalizedTag;
+
+                              return (
+                                <button
+                                  type="button"
+                                  key={tag}
+                                  onClick={(e) => handleTagClick(tag, e)}
+                                  className={`inline-flex items-center px-2 py-1 rounded-md text-xs border lowercase transition-colors ${
+                                    isActive
+                                      ? "bg-primary text-primary-foreground border-primary"
+                                      : "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20"
+                                  }`}
+                                >
+                                  <Tag size={10} className="mr-1" />
+                                  {tag}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                        {log.content && (
+                          <div className="prose dark:prose-invert max-w-none mt-3">
+                            <p className="text-foreground/80 whitespace-pre-wrap leading-relaxed">
+                              {log.content}
+                            </p>
+                          </div>
                         )}
                       </div>
-                      {log.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {log.tags.map((tag) => {
-                            const normalizedTag = tag.toLowerCase();
-                            const isActive = activeTagFilter === normalizedTag;
-
-                            return (
-                              <button
-                                type="button"
-                                key={tag}
-                                onClick={(e) => handleTagClick(tag, e)}
-                                className={`inline-flex items-center px-2 py-1 rounded-md text-xs border lowercase transition-colors ${
-                                  isActive
-                                    ? "bg-primary text-primary-foreground border-primary"
-                                    : "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20"
-                                }`}
-                              >
-                                <Tag size={10} className="mr-1" />
-                                {tag}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                      {log.content && (
-                        <div className="prose dark:prose-invert max-w-none mt-3">
-                          <p className="text-foreground/80 whitespace-pre-wrap leading-relaxed">
-                            {log.content}
-                          </p>
-                        </div>
-                      )}
                     </div>
-                  </div>
 
-                  {/* Desktop layout (xl and up) - dates in left margin */}
-                  <div className="hidden xl:block relative">
-                    <div className="absolute -left-32 top-4 w-24 text-right">
-                      <div className="text-sm font-medium text-muted-foreground whitespace-nowrap mt-1">
-                        {formatDate(new Date(log.date))}
+                    {/* Desktop layout (xl and up) */}
+                    <div className="hidden xl:block relative">
+                      <div className="absolute -left-32 top-4 w-24 text-right">
+                        <div className="text-sm font-medium text-muted-foreground whitespace-nowrap mt-1">
+                          {formatDate(new Date(log.date))}
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="hover:bg-muted/50 transition-colors rounded-lg p-4 pl-0">
-                      <button
-                        onClick={() => startEdit(log)}
-                        className="text-left w-full group"
-                      >
-                        <h3 className="font-semibold text-foreground text-lg mb-1 group-hover:text-primary transition-colors">
-                          {log.title}
-                        </h3>
-                      </button>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Clock size={14} />
-                          Updated {formatDate(new Date(log.updatedAt))}
-                        </span>
-                        {log.attachments && log.attachments.length > 0 && (
-                          <span className="flex items-center gap-1 text-blue-600">
-                            <Paperclip size={14} />
-                            {log.attachments.length}
+                      <div className="pl-0">
+                        <button
+                          onClick={() => startEdit(log)}
+                          className="text-left w-full group"
+                        >
+                          <h3 className="font-semibold text-foreground text-lg mb-1 group-hover:text-primary transition-colors">
+                            {log.title}
+                          </h3>
+                        </button>
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <Clock size={14} />
+                            Updated {formatDate(new Date(log.updatedAt))}
                           </span>
+                          {log.attachments && log.attachments.length > 0 && (
+                            <span className="flex items-center gap-1 text-blue-600">
+                              <Paperclip size={14} />
+                              {log.attachments.length}
+                            </span>
+                          )}
+                        </div>
+                        {log.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {log.tags.map((tag) => {
+                              const normalizedTag = tag.toLowerCase();
+                              const isActive = activeTagFilter === normalizedTag;
+
+                              return (
+                                <button
+                                  type="button"
+                                  key={tag}
+                                  onClick={(e) => handleTagClick(tag, e)}
+                                  className={`inline-flex items-center px-2 py-1 rounded-md text-xs border lowercase transition-colors ${
+                                    isActive
+                                      ? "bg-primary text-primary-foreground border-primary"
+                                      : "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20"
+                                  }`}
+                                >
+                                  <Tag size={10} className="mr-1" />
+                                  {tag}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                        {log.content && (
+                          <div className="prose dark:prose-invert max-w-none mt-3">
+                            <p className="text-foreground/80 whitespace-pre-wrap leading-relaxed">
+                              {log.content}
+                            </p>
+                          </div>
                         )}
                       </div>
-                      {log.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {log.tags.map((tag) => {
-                            const normalizedTag = tag.toLowerCase();
-                            const isActive = activeTagFilter === normalizedTag;
-
-                            return (
-                              <button
-                                type="button"
-                                key={tag}
-                                onClick={(e) => handleTagClick(tag, e)}
-                                className={`inline-flex items-center px-2 py-1 rounded-md text-xs border lowercase transition-colors ${
-                                  isActive
-                                    ? "bg-primary text-primary-foreground border-primary"
-                                    : "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20"
-                                }`}
-                              >
-                                <Tag size={10} className="mr-1" />
-                                {tag}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                      {log.content && (
-                        <div className="prose dark:prose-invert max-w-none mt-3">
-                          <p className="text-foreground/80 whitespace-pre-wrap leading-relaxed">
-                            {log.content}
-                          </p>
-                        </div>
-                      )}
                     </div>
+
+                    {isEditing && renderLogForm("edit")}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
