@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
 import {
   Search,
@@ -64,6 +64,8 @@ export default function ContactsView({
   const [sortBy, setSortBy] = useState<"name" | "updated">("name");
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
+  const [shouldScrollToEdit, setShouldScrollToEdit] = useState(false);
+  const activeCardRef = useRef<HTMLDivElement | null>(null);
 
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [previewAttachment, setPreviewAttachment] = useState<Attachment | null>(
@@ -72,12 +74,14 @@ export default function ContactsView({
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
 
   // Form state
-  const [formData, setFormData] = useState({
+  const emptyForm = {
     name: "",
     notes: "",
     tags: [] as string[],
     avatar: null as string | null,
-  });
+  };
+
+  const [formData, setFormData] = useState(emptyForm);
 
   // Filter and sort contacts
   const filteredAndSortedContacts = useMemo(() => {
@@ -142,9 +146,11 @@ export default function ContactsView({
   };
 
   const resetForm = () => {
-    setFormData({ name: "", notes: "", tags: [], avatar: null });
+    setFormData(emptyForm);
     setShowAddForm(false);
     setEditingContact(null);
+    setShouldScrollToEdit(false);
+    activeCardRef.current = null;
   };
 
   const startEdit = (contact: Contact) => {
@@ -155,7 +161,8 @@ export default function ContactsView({
       avatar: contact.avatar || null,
     });
     setEditingContact(contact);
-    setShowAddForm(true);
+    setShowAddForm(false);
+    setShouldScrollToEdit(true);
   };
 
   const addTag = (tagName: string) => {
@@ -308,6 +315,181 @@ export default function ContactsView({
     }
   }, [contacts, editingContact]);
 
+  useEffect(() => {
+    if (!shouldScrollToEdit || !editingContact) return;
+
+    const rafId = requestAnimationFrame(() => {
+      const targetElement = activeCardRef.current;
+      if (!targetElement) {
+        setShouldScrollToEdit(false);
+        return;
+      }
+
+      const header = document.querySelector("header");
+      const headerHeight = header
+        ? Number(header.getBoundingClientRect().height) || 0
+        : 0;
+
+      const docStyle = getComputedStyle(document.documentElement);
+      const scrollPaddingTop =
+        parseFloat(docStyle.getPropertyValue("scroll-padding-top")) || 0;
+
+      const gap = 8; // small breathing room below the header
+      const offset = Math.max(headerHeight, scrollPaddingTop) + gap;
+      const topPosition =
+        window.scrollY + targetElement.getBoundingClientRect().top - offset;
+
+      window.scrollTo({
+        top: Math.max(topPosition, 0),
+        behavior: "smooth",
+      });
+
+      setShouldScrollToEdit(false);
+    });
+
+    return () => cancelAnimationFrame(rafId);
+  }, [shouldScrollToEdit, editingContact]);
+
+  const renderContactForm = (variant: "add" | "edit") => (
+    <div
+      className={`bg-card border border-border rounded-lg p-6 shadow-sm ${
+        variant === "edit" ? "mt-4" : ""
+      }`}
+    >
+      <h3 className="text-lg font-semibold mb-4">
+        {editingContact ? "Edit Contact" : "Add New Contact"}
+      </h3>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium mb-1">Name</label>
+          <input
+            type="text"
+            value={formData.name}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, name: e.target.value }))
+            }
+            className="w-full px-3 py-2 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1">Avatar</label>
+          <div className="flex items-center gap-4">
+            {formData.avatar ? (
+              <div className="relative">
+                <Image
+                  src={formData.avatar}
+                  alt="Avatar preview"
+                  width={64}
+                  height={64}
+                  className="w-16 h-16 rounded-full object-cover border-2 border-border cursor-pointer hover:opacity-80 transition-opacity"
+                  onClick={openAvatarModal}
+                  title="Click to view full size"
+                />
+                <button
+                  type="button"
+                  onClick={removeAvatar}
+                  className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center hover:bg-destructive/90 transition-colors"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            ) : (
+              <div
+                className="w-16 h-16 rounded-full bg-muted border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:bg-muted/80 transition-colors group"
+                onClick={triggerFileUpload}
+                title="Click to upload photo"
+              >
+                <User
+                  size={24}
+                  className="text-muted-foreground group-hover:text-muted-foreground/80"
+                />
+              </div>
+            )}
+            <div className="flex-1">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarUpload}
+                className="hidden"
+                id="avatar-upload"
+                multiple
+              />
+              <label
+                htmlFor="avatar-upload"
+                className="inline-flex items-center gap-2 px-3 py-2 border border-input rounded-lg bg-background hover:bg-accent transition-colors cursor-pointer text-sm"
+              >
+                <Upload size={16} />
+                {formData.avatar ? "Change Photo" : "Upload Photo"}
+              </label>
+              <p className="text-xs text-muted-foreground mt-1">
+                JPG, PNG, GIF up to 10MB. Will be resized to 1200px.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1">Notes</label>
+          <textarea
+            value={formData.notes}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, notes: e.target.value }))
+            }
+            rows={3}
+            className="w-full px-3 py-2 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent"
+            placeholder="Add any notes about this contact..."
+          />
+        </div>
+
+        <TagInput
+          selectedTags={formData.tags}
+          availableTags={tags}
+          onAddTag={addTag}
+          onRemoveTag={removeTag}
+          placeholder="Add a tag..."
+        />
+
+        {editingContact && (
+          <AttachmentManager
+            attachments={editingContact.attachments || []}
+            contactId={editingContact.id}
+            onAttachmentsUpdate={handleAttachmentsUpdate}
+            onPreview={handleAttachmentPreview}
+            key={editingContact.id} // Force re-render when editing different contact
+          />
+        )}
+
+        <div className="flex gap-2 pt-4">
+          <button
+            type="submit"
+            className="px-3 sm:px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm"
+          >
+            Save Contact
+          </button>
+          <button
+            type="button"
+            onClick={resetForm}
+            className="px-3 sm:px-4 py-2 border border-input text-foreground rounded-lg hover:bg-accent transition-colors text-sm"
+          >
+            Cancel
+          </button>
+          {editingContact && (
+            <button
+              type="button"
+              onClick={() => handleDelete(editingContact.id)}
+              className="px-3 sm:px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 transition-colors ml-auto text-sm"
+            >
+              Delete
+            </button>
+          )}
+        </div>
+      </form>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       {/* Header with search and controls */}
@@ -345,7 +527,13 @@ export default function ContactsView({
           </select>
 
           <button
-            onClick={() => setShowAddForm(true)}
+            onClick={() => {
+              setEditingContact(null);
+              setFormData(emptyForm);
+              setShowAddForm(true);
+              setShouldScrollToEdit(false);
+              activeCardRef.current = null;
+            }}
             className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm"
           >
             <Plus size={16} />
@@ -355,141 +543,7 @@ export default function ContactsView({
       </div>
 
       {/* Add/Edit Form */}
-      {showAddForm && (
-        <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
-          <h3 className="text-lg font-semibold mb-4">
-            {editingContact ? "Edit Contact" : "Add New Contact"}
-          </h3>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Name</label>
-              <input
-                type="text"
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, name: e.target.value }))
-                }
-                className="w-full px-3 py-2 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Avatar</label>
-              <div className="flex items-center gap-4">
-                {formData.avatar ? (
-                  <div className="relative">
-                    <Image
-                      src={formData.avatar}
-                      alt="Avatar preview"
-                      width={64}
-                      height={64}
-                      className="w-16 h-16 rounded-full object-cover border-2 border-border cursor-pointer hover:opacity-80 transition-opacity"
-                      onClick={openAvatarModal}
-                      title="Click to view full size"
-                    />
-                    <button
-                      type="button"
-                      onClick={removeAvatar}
-                      className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center hover:bg-destructive/90 transition-colors"
-                    >
-                      <X size={12} />
-                    </button>
-                  </div>
-                ) : (
-                  <div
-                    className="w-16 h-16 rounded-full bg-muted border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:bg-muted/80 transition-colors group"
-                    onClick={triggerFileUpload}
-                    title="Click to upload photo"
-                  >
-                    <User
-                      size={24}
-                      className="text-muted-foreground group-hover:text-muted-foreground/80"
-                    />
-                  </div>
-                )}
-                <div className="flex-1">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleAvatarUpload}
-                    className="hidden"
-                    id="avatar-upload"
-                    multiple
-                  />
-                  <label
-                    htmlFor="avatar-upload"
-                    className="inline-flex items-center gap-2 px-3 py-2 border border-input rounded-lg bg-background hover:bg-accent transition-colors cursor-pointer text-sm"
-                  >
-                    <Upload size={16} />
-                    {formData.avatar ? "Change Photo" : "Upload Photo"}
-                  </label>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    JPG, PNG, GIF up to 10MB. Will be resized to 1200px.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Notes</label>
-              <textarea
-                value={formData.notes}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, notes: e.target.value }))
-                }
-                rows={3}
-                className="w-full px-3 py-2 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent"
-                placeholder="Add any notes about this contact..."
-              />
-            </div>
-
-            <TagInput
-              selectedTags={formData.tags}
-              availableTags={tags}
-              onAddTag={addTag}
-              onRemoveTag={removeTag}
-              placeholder="Add a tag..."
-            />
-
-            {editingContact && (
-              <AttachmentManager
-                attachments={editingContact.attachments || []}
-                contactId={editingContact.id}
-                onAttachmentsUpdate={handleAttachmentsUpdate}
-                onPreview={handleAttachmentPreview}
-                key={editingContact.id} // Force re-render when editing different contact
-              />
-            )}
-
-            <div className="flex gap-2 pt-4">
-              <button
-                type="submit"
-                className="px-3 sm:px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm"
-              >
-                Save Contact
-              </button>
-              <button
-                type="button"
-                onClick={resetForm}
-                className="px-3 sm:px-4 py-2 border border-input text-foreground rounded-lg hover:bg-accent transition-colors text-sm"
-              >
-                Cancel
-              </button>
-              {editingContact && (
-                <button
-                  type="button"
-                  onClick={() => handleDelete(editingContact.id)}
-                  className="px-3 sm:px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 transition-colors ml-auto text-sm"
-                >
-                  Delete
-                </button>
-              )}
-            </div>
-          </form>
-        </div>
-      )}
+      {showAddForm && renderContactForm("add")}
 
       {/* Contacts List */}
       <div className="space-y-4">
@@ -504,69 +558,78 @@ export default function ContactsView({
             </p>
           </div>
         ) : (
-          filteredAndSortedContacts.map((contact) => (
-            <div
-              key={contact.id}
-              className="bg-card border border-border rounded-lg p-4 hover:shadow-md transition-all duration-200 hover:border-border/80"
-            >
-              <button
-                onClick={() => startEdit(contact)}
-                className="text-left w-full group"
+          filteredAndSortedContacts.map((contact) => {
+            const isEditing = editingContact?.id === contact.id;
+
+            return (
+              <div
+                key={contact.id}
+                className={`bg-card border border-border rounded-lg p-4 hover:shadow-md transition-all duration-200 hover:border-border/80 ${
+                  isEditing ? "ring-1 ring-primary/40" : ""
+                }`}
+                ref={isEditing ? activeCardRef : undefined}
               >
-                <div className="flex items-start gap-3">
-                  {contact.avatar ? (
-                    <Image
-                      src={contact.avatar}
-                      alt={`${contact.name}'s avatar`}
-                      width={48}
-                      height={48}
-                      className="w-12 h-12 rounded-full object-cover border-2 border-border flex-shrink-0"
-                    />
-                  ) : (
-                    <div className="w-12 h-12 rounded-full bg-muted border-2 border-border flex items-center justify-center flex-shrink-0">
-                      <User size={16} className="text-muted-foreground" />
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-card-foreground truncate group-hover:text-primary transition-colors">
-                      {contact.name}
-                    </h3>
-                    {contact.notes && (
-                      <p className="text-muted-foreground text-sm mt-1 line-clamp-2">
-                        {contact.notes}
-                      </p>
-                    )}
-                    {contact.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {contact.tags.map((tag) => (
-                          <span
-                            key={tag}
-                            className="inline-flex items-center px-2 py-1 bg-primary/10 text-primary rounded-md text-xs border border-primary/20 lowercase"
-                          >
-                            <Tag size={10} className="mr-1" />
-                            {tag}
-                          </span>
-                        ))}
+                <button
+                  onClick={() => startEdit(contact)}
+                  className="text-left w-full group"
+                >
+                  <div className="flex items-start gap-3">
+                    {contact.avatar ? (
+                      <Image
+                        src={contact.avatar}
+                        alt={`${contact.name}'s avatar`}
+                        width={48}
+                        height={48}
+                        className="w-12 h-12 rounded-full object-cover border-2 border-border flex-shrink-0"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-full bg-muted border-2 border-border flex items-center justify-center flex-shrink-0">
+                        <User size={16} className="text-muted-foreground" />
                       </div>
                     )}
-                    <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Clock size={12} />
-                        Updated {formatDate(new Date(contact.updatedAt))}
-                      </span>
-                      {contact.attachments &&
-                        contact.attachments.length > 0 && (
-                          <span className="flex items-center gap-1 text-blue-600">
-                            <Paperclip size={12} />
-                            {contact.attachments.length}
-                          </span>
-                        )}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-card-foreground truncate group-hover:text-primary transition-colors">
+                        {contact.name}
+                      </h3>
+                      {contact.notes && (
+                        <p className="text-muted-foreground text-sm mt-1 line-clamp-2">
+                          {contact.notes}
+                        </p>
+                      )}
+                      {contact.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {contact.tags.map((tag) => (
+                            <span
+                              key={tag}
+                              className="inline-flex items-center px-2 py-1 bg-primary/10 text-primary rounded-md text-xs border border-primary/20 lowercase"
+                            >
+                              <Tag size={10} className="mr-1" />
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Clock size={12} />
+                          Updated {formatDate(new Date(contact.updatedAt))}
+                        </span>
+                        {contact.attachments &&
+                          contact.attachments.length > 0 && (
+                            <span className="flex items-center gap-1 text-blue-600">
+                              <Paperclip size={12} />
+                              {contact.attachments.length}
+                            </span>
+                          )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </button>
-            </div>
-          ))
+                </button>
+
+                {isEditing && renderContactForm("edit")}
+              </div>
+            );
+          })
         )}
       </div>
 
