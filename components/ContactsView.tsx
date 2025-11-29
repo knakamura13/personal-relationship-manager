@@ -1,6 +1,13 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import {
+  useState,
+  useMemo,
+  useEffect,
+  useCallback,
+  useRef,
+  type MouseEvent,
+} from "react";
 import Image from "next/image";
 import {
   Search,
@@ -67,6 +74,7 @@ export default function ContactsView({
   const [shouldScrollToEdit, setShouldScrollToEdit] = useState(false);
   const activeCardRef = useRef<HTMLDivElement | null>(null);
 
+  const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [previewAttachment, setPreviewAttachment] = useState<Attachment | null>(
     null
@@ -85,11 +93,20 @@ export default function ContactsView({
 
   // Filter and sort contacts
   const filteredAndSortedContacts = useMemo(() => {
+    const normalizedActiveTag = activeTagFilter?.toLowerCase();
+
     let filtered = contacts.filter((contact) => {
       const searchText = `${contact.name} ${contact.notes} ${contact.tags.join(
         " "
       )}`;
-      return fuzzySearch(searchQuery, searchText);
+      const matchesSearch = fuzzySearch(searchQuery, searchText);
+      const matchesTag =
+        !normalizedActiveTag ||
+        contact.tags.some(
+          (tag) => tag.toLowerCase() === normalizedActiveTag
+        );
+
+      return matchesSearch && matchesTag;
     });
 
     return filtered.sort((a, b) => {
@@ -101,7 +118,7 @@ export default function ContactsView({
         );
       }
     });
-  }, [contacts, searchQuery, sortBy]);
+  }, [contacts, searchQuery, sortBy, activeTagFilter]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -183,6 +200,19 @@ export default function ContactsView({
       ...prev,
       tags: prev.tags.filter((tag) => tag !== tagName),
     }));
+  };
+
+  const handleTagClick = (
+    tagName: string,
+    event?: MouseEvent<HTMLButtonElement>
+  ) => {
+    event?.stopPropagation();
+    const normalized = tagName.toLowerCase();
+    setActiveTagFilter((prev) => (prev === normalized ? null : normalized));
+    setShowAddForm(false);
+    setEditingContact(null);
+    setShouldScrollToEdit(false);
+    activeCardRef.current = null;
   };
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -508,6 +538,21 @@ export default function ContactsView({
               className="w-full pl-10 pr-4 py-2 max-h-10 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent"
             />
           </div>
+          {activeTagFilter && (
+            <div className="mt-2 flex items-center gap-2 text-xs text-primary">
+              <span className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 border border-primary/20 rounded-md lowercase">
+                <Tag size={10} />
+                filtering by {activeTagFilter}
+              </span>
+              <button
+                type="button"
+                onClick={() => setActiveTagFilter(null)}
+                className="text-muted-foreground hover:text-foreground underline underline-offset-2"
+              >
+                Clear
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="flex gap-2 w-full sm:w-auto h-10 justify-between">
@@ -598,15 +643,26 @@ export default function ContactsView({
                       )}
                       {contact.tags.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
-                          {contact.tags.map((tag) => (
-                            <span
-                              key={tag}
-                              className="inline-flex items-center px-2 py-1 bg-primary/10 text-primary rounded-md text-xs border border-primary/20 lowercase"
-                            >
-                              <Tag size={10} className="mr-1" />
-                              {tag}
-                            </span>
-                          ))}
+                          {contact.tags.map((tag) => {
+                            const normalizedTag = tag.toLowerCase();
+                            const isActive = activeTagFilter === normalizedTag;
+
+                            return (
+                              <button
+                                type="button"
+                                key={tag}
+                                onClick={(e) => handleTagClick(tag, e)}
+                                className={`inline-flex items-center px-2 py-1 rounded-md text-xs border lowercase transition-colors ${
+                                  isActive
+                                    ? "bg-primary text-primary-foreground border-primary"
+                                    : "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20"
+                                }`}
+                              >
+                                <Tag size={10} className="mr-1" />
+                                {tag}
+                              </button>
+                            );
+                          })}
                         </div>
                       )}
                       <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">

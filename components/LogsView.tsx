@@ -1,6 +1,12 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import {
+  useState,
+  useMemo,
+  useEffect,
+  useCallback,
+  type MouseEvent,
+} from "react";
 import Image from "next/image";
 import { Search, Plus, Clock, BookOpen, Tag, Paperclip, X } from "lucide-react";
 import {
@@ -53,6 +59,7 @@ export default function LogsView({
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingLog, setEditingLog] = useState<LogEntry | null>(null);
+  const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
 
   const [previewAttachment, setPreviewAttachment] = useState<Attachment | null>(
     null
@@ -69,16 +76,23 @@ export default function LogsView({
 
   // Filter logs (search and reverse chronological order)
   const filteredLogs = useMemo(() => {
+    const normalizedActiveTag = activeTagFilter?.toLowerCase();
+
     let filtered = logs.filter((log) => {
       const searchText = `${log.title} ${log.content} ${log.tags.join(" ")}`;
-      return fuzzySearch(searchQuery, searchText);
+      const matchesSearch = fuzzySearch(searchQuery, searchText);
+      const matchesTag =
+        !normalizedActiveTag ||
+        log.tags.some((tag) => tag.toLowerCase() === normalizedActiveTag);
+
+      return matchesSearch && matchesTag;
     });
 
     // Sort by date (newest first)
     return filtered.sort((a, b) => {
       return new Date(b.date).getTime() - new Date(a.date).getTime();
     });
-  }, [logs, searchQuery]);
+  }, [logs, searchQuery, activeTagFilter]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -161,6 +175,17 @@ export default function LogsView({
       ...prev,
       tags: prev.tags.filter((tag) => tag !== tagName),
     }));
+  };
+
+  const handleTagClick = (
+    tagName: string,
+    event?: MouseEvent<HTMLButtonElement>
+  ) => {
+    event?.stopPropagation();
+    const normalized = tagName.toLowerCase();
+    setActiveTagFilter((prev) => (prev === normalized ? null : normalized));
+    setShowAddForm(false);
+    setEditingLog(null);
   };
 
   const handleAttachmentPreview = async (attachment: Attachment | null) => {
@@ -263,6 +288,21 @@ export default function LogsView({
               className="w-full max-h-10 pl-10 pr-4 py-2 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent"
             />
           </div>
+          {activeTagFilter && (
+            <div className="mt-2 flex items-center gap-2 text-xs text-primary">
+              <span className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 border border-primary/20 rounded-md lowercase">
+                <Tag size={10} />
+                filtering by {activeTagFilter}
+              </span>
+              <button
+                type="button"
+                onClick={() => setActiveTagFilter(null)}
+                className="text-muted-foreground hover:text-foreground underline underline-offset-2"
+              >
+                Clear
+              </button>
+            </div>
+          )}
         </div>
 
         <button
@@ -417,15 +457,26 @@ export default function LogsView({
                       </div>
                       {log.tags.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
-                          {log.tags.map((tag) => (
-                            <span
-                              key={tag}
-                              className="inline-flex items-center px-2 py-1 bg-primary/10 text-primary rounded-md text-xs border border-primary/20 lowercase"
-                            >
-                              <Tag size={10} className="mr-1" />
-                              {tag}
-                            </span>
-                          ))}
+                          {log.tags.map((tag) => {
+                            const normalizedTag = tag.toLowerCase();
+                            const isActive = activeTagFilter === normalizedTag;
+
+                            return (
+                              <button
+                                type="button"
+                                key={tag}
+                                onClick={(e) => handleTagClick(tag, e)}
+                                className={`inline-flex items-center px-2 py-1 rounded-md text-xs border lowercase transition-colors ${
+                                  isActive
+                                    ? "bg-primary text-primary-foreground border-primary"
+                                    : "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20"
+                                }`}
+                              >
+                                <Tag size={10} className="mr-1" />
+                                {tag}
+                              </button>
+                            );
+                          })}
                         </div>
                       )}
                       {log.content && (
@@ -469,15 +520,26 @@ export default function LogsView({
                       </div>
                       {log.tags.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
-                          {log.tags.map((tag) => (
-                            <span
-                              key={tag}
-                              className="inline-flex items-center px-2 py-1 bg-primary/10 text-primary rounded-md text-xs border border-primary/20 lowercase"
-                            >
-                              <Tag size={10} className="mr-1" />
-                              {tag}
-                            </span>
-                          ))}
+                          {log.tags.map((tag) => {
+                            const normalizedTag = tag.toLowerCase();
+                            const isActive = activeTagFilter === normalizedTag;
+
+                            return (
+                              <button
+                                type="button"
+                                key={tag}
+                                onClick={(e) => handleTagClick(tag, e)}
+                                className={`inline-flex items-center px-2 py-1 rounded-md text-xs border lowercase transition-colors ${
+                                  isActive
+                                    ? "bg-primary text-primary-foreground border-primary"
+                                    : "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20"
+                                }`}
+                              >
+                                <Tag size={10} className="mr-1" />
+                                {tag}
+                              </button>
+                            );
+                          })}
                         </div>
                       )}
                       {log.content && (
