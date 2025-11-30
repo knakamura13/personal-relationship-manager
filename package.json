@@ -9,7 +9,7 @@
     "deploy:db": "prisma migrate deploy",
     "postinstall": "prisma generate",
     "start": "next start",
-    "start:production": "prisma migrate deploy && next start",
+    "start:production": "node scripts/migrate-production.js $DATABASE_URL && next start",
     "deploy": "node scripts/deploy.js",
     "migrate:production": "node scripts/migrate-production.js",
     "lint": "next lint",
