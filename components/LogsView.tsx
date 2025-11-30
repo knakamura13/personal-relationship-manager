@@ -409,7 +409,7 @@ export default function LogsView({
   return (
     <div className="space-y-6">
       {/* Header with search and controls */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+      <div className="flex flex-col sm:flex-row gap-4 items-start">
         <div className="flex-1 w-full sm:w-auto">
           <div className="relative">
             <Search
@@ -517,7 +517,8 @@ export default function LogsView({
                           <div className="flex flex-wrap gap-1 mt-2">
                             {log.tags.map((tag) => {
                               const normalizedTag = tag.toLowerCase();
-                              const isActive = activeTagFilter === normalizedTag;
+                              const isActive =
+                                activeTagFilter === normalizedTag;
 
                               return (
                                 <button
@@ -580,7 +581,8 @@ export default function LogsView({
                           <div className="flex flex-wrap gap-1 mt-2">
                             {log.tags.map((tag) => {
                               const normalizedTag = tag.toLowerCase();
-                              const isActive = activeTagFilter === normalizedTag;
+                              const isActive =
+                                activeTagFilter === normalizedTag;
 
                               return (
                                 <button

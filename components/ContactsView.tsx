@@ -68,7 +68,7 @@ export default function ContactsView({
   onTagsUpdate,
 }: ContactsViewProps) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState<"name" | "updated">("name");
+  const [sortBy, setSortBy] = useState<"name" | "date">("name");
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
   const [shouldScrollToEdit, setShouldScrollToEdit] = useState(false);
@@ -102,9 +102,7 @@ export default function ContactsView({
       const matchesSearch = fuzzySearch(searchQuery, searchText);
       const matchesTag =
         !normalizedActiveTag ||
-        contact.tags.some(
-          (tag) => tag.toLowerCase() === normalizedActiveTag
-        );
+        contact.tags.some((tag) => tag.toLowerCase() === normalizedActiveTag);
 
       return matchesSearch && matchesTag;
     });
@@ -523,7 +521,8 @@ export default function ContactsView({
   return (
     <div className="space-y-6">
       {/* Header with search and controls */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+      <div className="flex flex-col sm:flex-row gap-4 items-start">
+        {/* Search bar and tag filters */}
         <div className="flex-1 w-full sm:w-auto">
           <div className="relative">
             <Search
@@ -555,10 +554,11 @@ export default function ContactsView({
           )}
         </div>
 
+        {/* Sort menu and add contact button */}
         <div className="flex gap-2 w-full sm:w-auto h-10 justify-between">
           <select
             value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as "name" | "updated")}
+            onChange={(e) => setSortBy(e.target.value as "name" | "date")}
             className="pl-3 pr-10 py-2 border border-input rounded-lg bg-background text-sm appearance-none cursor-pointer"
             style={{
               backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
@@ -568,7 +568,7 @@ export default function ContactsView({
             }}
           >
             <option value="name">Sort by Name</option>
-            <option value="updated">Sort by Updated</option>
+            <option value="date">Sort by Date</option>
           </select>
 
           <button
