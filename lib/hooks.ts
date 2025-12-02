@@ -53,7 +53,7 @@ export function useDataCache() {
     error: null,
   });
 
-  const fetchContacts = useCallback(async () => {
+  const fetchContacts = useCallback(async (clearError = true) => {
     try {
       const response = await fetch("/api/contacts");
       if (!response.ok) {
@@ -64,20 +64,20 @@ export function useDataCache() {
       setData((prev) => ({
         ...prev,
         contacts: Array.isArray(contacts) ? contacts : [],
-        error: null,
+        error: clearError ? null : prev.error,
       }));
-      return contacts;
+      return true;
     } catch (error) {
       console.error("Failed to fetch contacts:", error);
       setData((prev) => ({
         ...prev,
         error: "Failed to fetch contacts",
       }));
-      return [];
+      return false;
     }
   }, []);
 
-  const fetchLogs = useCallback(async () => {
+  const fetchLogs = useCallback(async (clearError = true) => {
     try {
       const response = await fetch("/api/logs");
       if (!response.ok) {
@@ -88,20 +88,20 @@ export function useDataCache() {
       setData((prev) => ({
         ...prev,
         logs: Array.isArray(logs) ? logs : [],
-        error: null,
+        error: clearError ? null : prev.error,
       }));
-      return logs;
+      return true;
     } catch (error) {
       console.error("Failed to fetch logs:", error);
       setData((prev) => ({
         ...prev,
         error: "Failed to fetch logs",
       }));
-      return [];
+      return false;
     }
   }, []);
 
-  const fetchTags = useCallback(async () => {
+  const fetchTags = useCallback(async (clearError = true) => {
     try {
       const response = await fetch("/api/tags");
       if (!response.ok) {
@@ -112,16 +112,16 @@ export function useDataCache() {
       setData((prev) => ({
         ...prev,
         tags: Array.isArray(tags) ? tags : [],
-        error: null,
+        error: clearError ? null : prev.error,
       }));
-      return tags;
+      return true;
     } catch (error) {
       console.error("Failed to fetch tags:", error);
       setData((prev) => ({
         ...prev,
         error: "Failed to fetch tags",
       }));
-      return [];
+      return false;
     }
   }, []);
 
@@ -129,7 +129,15 @@ export function useDataCache() {
     setData((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      await Promise.all([fetchContacts(), fetchLogs(), fetchTags()]);
+      const [contactsSuccess, logsSuccess, tagsSuccess] = await Promise.all([
+        fetchContacts(false),
+        fetchLogs(false),
+        fetchTags(false),
+      ]);
+
+      if (contactsSuccess && logsSuccess && tagsSuccess) {
+        setData((prev) => ({ ...prev, error: null }));
+      }
     } finally {
       setData((prev) => ({ ...prev, isLoading: false }));
     }
