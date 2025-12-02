@@ -49,7 +49,13 @@ export async function POST(request: NextRequest) {
     // Normalize tags to lowercase
     const normalizedTags =
       tags && Array.isArray(tags)
-        ? tags.map((tag) => tag.toLowerCase().trim()).filter((tag) => tag)
+        ? Array.from(
+            new Set(
+              tags
+                .map((tag) => tag.toLowerCase().trim())
+                .filter((tag) => tag)
+            )
+          )
         : [];
 
     const logEntry = await prisma.logEntry.create({
