@@ -56,10 +56,15 @@ export function useDataCache() {
   const fetchContacts = useCallback(async () => {
     try {
       const response = await fetch("/api/contacts");
+      if (!response.ok) {
+        throw new Error(`Failed to fetch contacts: ${response.status}`);
+      }
+
       const contacts = await response.json();
       setData((prev) => ({
         ...prev,
         contacts: Array.isArray(contacts) ? contacts : [],
+        error: null,
       }));
       return contacts;
     } catch (error) {
@@ -75,10 +80,15 @@ export function useDataCache() {
   const fetchLogs = useCallback(async () => {
     try {
       const response = await fetch("/api/logs");
+      if (!response.ok) {
+        throw new Error(`Failed to fetch logs: ${response.status}`);
+      }
+
       const logs = await response.json();
       setData((prev) => ({
         ...prev,
         logs: Array.isArray(logs) ? logs : [],
+        error: null,
       }));
       return logs;
     } catch (error) {
@@ -94,10 +104,15 @@ export function useDataCache() {
   const fetchTags = useCallback(async () => {
     try {
       const response = await fetch("/api/tags");
+      if (!response.ok) {
+        throw new Error(`Failed to fetch tags: ${response.status}`);
+      }
+
       const tags = await response.json();
       setData((prev) => ({
         ...prev,
         tags: Array.isArray(tags) ? tags : [],
+        error: null,
       }));
       return tags;
     } catch (error) {
