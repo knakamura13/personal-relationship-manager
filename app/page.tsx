@@ -1,13 +1,33 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback } from "react";
 import { Contact, BookOpen } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import ContactsView from "@/components/ContactsView";
 import LogsView from "@/components/LogsView";
 import { useDataCache } from "@/lib/hooks";
 
+type Tab = "contacts" | "logs";
+
+function getValidTab(tab: string | null): Tab {
+  return tab === "logs" ? "logs" : "contacts";
+}
+
 export default function HomePage() {
-  const [activeTab, setActiveTab] = useState<"contacts" | "logs">("contacts");
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const activeTab = getValidTab(searchParams.get("tab"));
+
+  const setActiveTab = useCallback(
+    (nextTab: Tab) => {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("tab", nextTab);
+      router.push(`${pathname}?${params.toString()}`);
+    },
+    [pathname, router, searchParams],
+  );
+
   const {
     contacts,
     logs,
