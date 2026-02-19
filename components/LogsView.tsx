@@ -5,6 +5,7 @@ import {
   useMemo,
   useDeferredValue,
   useEffect,
+  useLayoutEffect,
   useCallback,
   useRef,
   type MouseEvent,
@@ -58,14 +59,16 @@ export default function LogsView({
   onLogsUpdate,
   onTagsUpdate,
 }: LogsViewProps) {
+  const INITIAL_VISIBLE_LOGS = 30;
+
   const [searchQuery, setSearchQuery] = useState("");
+  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_LOGS);
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingLog, setEditingLog] = useState<LogEntry | null>(null);
   const [shouldScrollToEdit, setShouldScrollToEdit] = useState(false);
   const activeCardRef = useRef<HTMLDivElement | null>(null);
   const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
-
   const [previewAttachment, setPreviewAttachment] = useState<Attachment | null>(
     null
   );
@@ -115,6 +118,15 @@ export default function LogsView({
       return new Date(b.date).getTime() - new Date(a.date).getTime();
     });
   }, [logs, deferredSearchQuery, activeTagFilter]);
+
+  const visibleLogs = useMemo(
+    () => filteredLogs.slice(0, visibleCount),
+    [filteredLogs, visibleCount]
+  );
+
+  useLayoutEffect(() => {
+    setVisibleCount(INITIAL_VISIBLE_LOGS);
+  }, [searchQuery, activeTagFilter]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -499,7 +511,7 @@ export default function LogsView({
         ) : (
           <div className="xl:relative xl:-ml-32 xl:pl-32">
             <div className="space-y-4">
-              {filteredLogs.map((log) => {
+              {visibleLogs.map((log) => {
                 const isEditing = editingLog?.id === log.id;
 
                 return (
@@ -642,6 +654,20 @@ export default function LogsView({
                 );
               })}
             </div>
+
+            {filteredLogs.length > visibleLogs.length && (
+              <div className="pt-6">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setVisibleCount((prev) => prev + INITIAL_VISIBLE_LOGS)
+                  }
+                  className="w-full px-4 py-2 border border-input text-foreground rounded-lg hover:bg-accent transition-colors text-sm"
+                >
+                  Load more
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

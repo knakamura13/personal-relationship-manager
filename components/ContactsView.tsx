@@ -5,6 +5,7 @@ import {
   useMemo,
   useDeferredValue,
   useEffect,
+  useLayoutEffect,
   useCallback,
   useRef,
   type MouseEvent,
@@ -68,9 +69,12 @@ export default function ContactsView({
   onContactsUpdate,
   onTagsUpdate,
 }: ContactsViewProps) {
+  const INITIAL_VISIBLE_CONTACTS = 30;
+
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"name" | "date">("name");
+  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_CONTACTS);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
   const [shouldScrollToEdit, setShouldScrollToEdit] = useState(false);
@@ -136,6 +140,15 @@ export default function ContactsView({
       }
     });
   }, [contacts, deferredSearchQuery, sortBy, activeTagFilter]);
+
+  const visibleContacts = useMemo(
+    () => filteredAndSortedContacts.slice(0, visibleCount),
+    [filteredAndSortedContacts, visibleCount]
+  );
+
+  useLayoutEffect(() => {
+    setVisibleCount(INITIAL_VISIBLE_CONTACTS);
+  }, [searchQuery, sortBy, activeTagFilter]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -638,7 +651,7 @@ export default function ContactsView({
             </p>
           </div>
         ) : (
-          filteredAndSortedContacts.map((contact) => {
+          visibleContacts.map((contact) => {
             const isEditing = editingContact?.id === contact.id;
 
             return (
@@ -721,6 +734,20 @@ export default function ContactsView({
               </div>
             );
           })
+        )}
+
+        {filteredAndSortedContacts.length > visibleContacts.length && (
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={() =>
+                setVisibleCount((prev) => prev + INITIAL_VISIBLE_CONTACTS)
+              }
+              className="w-full px-4 py-2 border border-input text-foreground rounded-lg hover:bg-accent transition-colors text-sm"
+            >
+              Load more
+            </button>
+          </div>
         )}
       </div>
 
