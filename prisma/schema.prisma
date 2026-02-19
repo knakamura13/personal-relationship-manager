@@ -40,7 +40,10 @@ model Attachment {
   filename     String    // Original filename
   mimeType     String    // MIME type (image/jpeg, application/pdf, etc.)
   size         Int       // File size in bytes
-  data         String    // Base64 encoded file data
+  data         String    // Base64 encoded file data or provider-managed payload reference fallback
+  storageProvider String? // Optional provider name for external object storage migration
+  storageReference String? // Optional provider-specific key/reference
+  storageUrl   String?   // Optional signed/public URL hint for previews/downloads
   contactId    String?
   logEntryId   String?
   contact      Contact?  @relation(fields: [contactId], references: [id], onDelete: Cascade)
