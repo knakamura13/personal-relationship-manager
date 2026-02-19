@@ -68,6 +68,8 @@ export default function LogsView({
     null
   );
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+  const attachmentModalCloseButtonRef = useRef<HTMLButtonElement | null>(null);
+  const attachmentModalTriggerRef = useRef<HTMLElement | null>(null);
 
   // Form state
   const createEmptyForm = () => ({
@@ -197,6 +199,7 @@ export default function LogsView({
     }
 
     try {
+      attachmentModalTriggerRef.current = document.activeElement as HTMLElement;
       setPreviewAttachment(attachment);
 
       const response = await fetch(`/api/attachments/${attachment.id}`);
@@ -224,6 +227,7 @@ export default function LogsView({
     }
     setPreviewImageUrl(null);
     setPreviewAttachment(null);
+    attachmentModalTriggerRef.current?.focus();
   }, [previewImageUrl]);
 
   const handlePreviewModalClick = (e: React.MouseEvent) => {
@@ -261,6 +265,12 @@ export default function LogsView({
       }
     };
   }, [previewImageUrl]);
+
+  useEffect(() => {
+    if (previewAttachment) {
+      attachmentModalCloseButtonRef.current?.focus();
+    }
+  }, [previewAttachment]);
 
   // Keep editing log in sync after attachments/log updates
   useEffect(() => {
@@ -627,13 +637,14 @@ export default function LogsView({
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
           onClick={handlePreviewModalClick}
         >
-          <div className="relative max-w-4xl max-h-full">
+          <div className="relative">
             {previewImageUrl ? (
               <Image
                 src={previewImageUrl}
                 alt={previewAttachment.filename}
-                fill
-                className="max-w-full max-h-full object-contain rounded-lg"
+                width={1600}
+                height={1200}
+                className="w-auto h-auto max-w-[90vw] max-h-[85vh] object-contain rounded-lg"
                 onClick={(e) => e.stopPropagation()}
               />
             ) : (
@@ -648,6 +659,7 @@ export default function LogsView({
             )}
             <button
               onClick={closeAttachmentPreview}
+              ref={attachmentModalCloseButtonRef}
               className="absolute -top-2 -right-2 w-8 h-8 bg-white text-black rounded-full flex items-center justify-center hover:bg-gray-100 transition-colors shadow-lg"
               title="Close"
             >
