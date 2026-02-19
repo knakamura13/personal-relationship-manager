@@ -3,6 +3,7 @@
 import {
   useState,
   useMemo,
+  useDeferredValue,
   useEffect,
   useCallback,
   useRef,
@@ -70,6 +71,7 @@ export default function ContactsView({
   const INITIAL_VISIBLE_CONTACTS = 30;
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"name" | "date">("name");
   const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_CONTACTS);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -83,6 +85,10 @@ export default function ContactsView({
     null
   );
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+  const avatarModalCloseButtonRef = useRef<HTMLButtonElement | null>(null);
+  const attachmentModalCloseButtonRef = useRef<HTMLButtonElement | null>(null);
+  const avatarModalTriggerRef = useRef<HTMLElement | null>(null);
+  const attachmentModalTriggerRef = useRef<HTMLElement | null>(null);
 
   // Form state
   const emptyForm = {
@@ -94,6 +100,19 @@ export default function ContactsView({
 
   const [formData, setFormData] = useState(emptyForm);
 
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 150);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [searchQuery]);
+
+  const deferredSearchQuery = useDeferredValue(debouncedSearchQuery);
+  const hasActiveFilters = Boolean(deferredSearchQuery || activeTagFilter);
+
   // Filter and sort contacts
   const filteredAndSortedContacts = useMemo(() => {
     const normalizedActiveTag = activeTagFilter?.toLowerCase();
@@ -102,7 +121,7 @@ export default function ContactsView({
       const searchText = `${contact.name} ${contact.notes} ${contact.tags.join(
         " "
       )}`;
-      const matchesSearch = fuzzySearch(searchQuery, searchText);
+      const matchesSearch = fuzzySearch(deferredSearchQuery, searchText);
       const matchesTag =
         !normalizedActiveTag ||
         contact.tags.some((tag) => tag.toLowerCase() === normalizedActiveTag);
@@ -119,7 +138,7 @@ export default function ContactsView({
         );
       }
     });
-  }, [contacts, searchQuery, sortBy, activeTagFilter]);
+  }, [contacts, deferredSearchQuery, sortBy, activeTagFilter]);
 
   const visibleContacts = useMemo(
     () => filteredAndSortedContacts.slice(0, visibleCount),
@@ -249,12 +268,14 @@ export default function ContactsView({
 
   const openAvatarModal = () => {
     if (formData.avatar) {
+      avatarModalTriggerRef.current = document.activeElement as HTMLElement;
       setShowAvatarModal(true);
     }
   };
 
   const closeAvatarModal = () => {
     setShowAvatarModal(false);
+    avatarModalTriggerRef.current?.focus();
   };
 
   const handleAttachmentPreview = async (attachment: Attachment | null) => {
@@ -264,6 +285,7 @@ export default function ContactsView({
     }
 
     try {
+      attachmentModalTriggerRef.current = document.activeElement as HTMLElement;
       setPreviewAttachment(attachment);
 
       const response = await fetch(`/api/attachments/${attachment.id}`);
@@ -291,6 +313,7 @@ export default function ContactsView({
     }
     setPreviewImageUrl(null);
     setPreviewAttachment(null);
+    attachmentModalTriggerRef.current?.focus();
   }, [previewImageUrl]);
 
   const handlePreviewModalClick = (e: React.MouseEvent) => {
@@ -344,6 +367,18 @@ export default function ContactsView({
       }
     };
   }, [previewImageUrl]);
+
+  useEffect(() => {
+    if (showAvatarModal) {
+      avatarModalCloseButtonRef.current?.focus();
+    }
+  }, [showAvatarModal]);
+
+  useEffect(() => {
+    if (previewAttachment) {
+      attachmentModalCloseButtonRef.current?.focus();
+    }
+  }, [previewAttachment]);
 
   // Update editingContact when contacts array changes (after attachment operations)
   useEffect(() => {
@@ -609,7 +644,7 @@ export default function ContactsView({
             <User size={48} className="mx-auto mb-4 opacity-50" />
             <p className="text-lg">No contacts found</p>
             <p className="text-sm">
-              {searchQuery
+              {hasActiveFilters
                 ? "Try adjusting your search"
                 : "Add your first contact to get started"}
             </p>
@@ -721,16 +756,18 @@ export default function ContactsView({
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
           onClick={closeAvatarModal}
         >
-          <div className="relative max-w-3xl max-h-full">
+          <div className="relative">
             <Image
               src={formData.avatar}
               alt="Avatar full size"
-              fill
-              className="max-w-full max-h-full object-contain rounded-lg"
+              width={1200}
+              height={1200}
+              className="w-auto h-auto max-w-[90vw] max-h-[85vh] object-contain rounded-lg"
               onClick={(e) => e.stopPropagation()}
             />
             <button
               onClick={closeAvatarModal}
+              ref={avatarModalCloseButtonRef}
               className="absolute -top-2 -right-2 w-8 h-8 bg-white text-black rounded-full flex items-center justify-center hover:bg-gray-100 transition-colors shadow-lg"
               title="Close"
             >
@@ -746,13 +783,14 @@ export default function ContactsView({
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
           onClick={handlePreviewModalClick}
         >
-          <div className="relative max-w-4xl max-h-full">
+          <div className="relative">
             {previewImageUrl ? (
               <Image
                 src={previewImageUrl}
                 alt={previewAttachment.filename}
-                fill
-                className="max-w-full max-h-full object-contain rounded-lg"
+                width={1600}
+                height={1200}
+                className="w-auto h-auto max-w-[90vw] max-h-[85vh] object-contain rounded-lg"
                 onClick={(e) => e.stopPropagation()}
               />
             ) : (
@@ -767,6 +805,7 @@ export default function ContactsView({
             )}
             <button
               onClick={closeAttachmentPreview}
+              ref={attachmentModalCloseButtonRef}
               className="absolute -top-2 -right-2 w-8 h-8 bg-white text-black rounded-full flex items-center justify-center hover:bg-gray-100 transition-colors shadow-lg"
               title="Close"
             >

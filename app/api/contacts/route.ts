@@ -58,23 +58,23 @@ export async function POST(request: NextRequest) {
           )
         : [];
 
-    const contact = await prisma.contact.create({
-      data: {
-        name: name.trim(),
-        notes: notes || "",
-        tags: JSON.stringify(normalizedTags),
-        avatar: avatar || null,
-      },
-    });
+    const contact = await prisma.$transaction(async (tx) => {
+      if (normalizedTags.length > 0) {
+        await tx.tag.createMany({
+          data: normalizedTags.map((tagName) => ({ name: tagName })),
+          skipDuplicates: true,
+        });
+      }
 
-    // Update tags table with new tags
-    for (const tagName of normalizedTags) {
-      await prisma.tag.upsert({
-        where: { name: tagName },
-        create: { name: tagName },
-        update: {},
+      return tx.contact.create({
+        data: {
+          name: name.trim(),
+          notes: notes || "",
+          tags: JSON.stringify(normalizedTags),
+          avatar: avatar || null,
+        },
       });
-    }
+    });
 
     return NextResponse.json(
       {
