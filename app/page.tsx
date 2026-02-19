@@ -51,7 +51,7 @@ export default function HomePage() {
               </div>
               <button
                 onClick={refreshAll}
-                className="shrink-0 rounded-md border border-destructive/40 bg-destructive text-destructive-foreground px-3 py-1 text-xs font-semibold hover:bg-destructive/90"
+                className="shrink-0 rounded-md border border-destructive/40 bg-destructive text-destructive-foreground px-3 py-1 text-xs font-semibold hover:bg-destructive/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 Retry
               </button>
@@ -60,17 +60,27 @@ export default function HomePage() {
         )}
         {/* Tab Navigation - centered */}
         <div className="container mx-auto max-w-4xl">
-          <div className="flex space-x-1 mb-6 bg-muted p-1 rounded-lg border border-border">
+          <div
+            role="tablist"
+            aria-label="Primary views"
+            className="flex space-x-1 mb-6 bg-muted p-1 rounded-lg border border-border"
+          >
             <button
+              role="tab"
+              aria-selected={false}
+              aria-controls="contacts-panel"
               onClick={() => setActiveTab("contacts")}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors text-muted-foreground hover:text-foreground hover:bg-accent border border-transparent"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors text-muted-foreground hover:text-foreground hover:bg-accent border border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               <Contact size={16} />
               Contacts
             </button>
             <button
+              role="tab"
+              aria-selected={true}
+              aria-controls="logs-panel"
               onClick={() => setActiveTab("logs")}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors bg-background text-foreground shadow-sm border border-border"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors bg-background text-foreground shadow-sm border border-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               <BookOpen size={16} />
               Logs
@@ -79,7 +89,7 @@ export default function HomePage() {
         </div>
 
         {/* Logs Content - full width with centered content area */}
-        <div className="container mx-auto max-w-4xl">
+        <div id="logs-panel" role="tabpanel" className="container mx-auto max-w-4xl">
           <LogsView
             logs={logs}
             tags={tags}
@@ -107,7 +117,7 @@ export default function HomePage() {
             </div>
             <button
               onClick={refreshAll}
-              className="shrink-0 rounded-md border border-destructive/40 bg-destructive text-destructive-foreground px-3 py-1 text-xs font-semibold hover:bg-destructive/90"
+              className="shrink-0 rounded-md border border-destructive/40 bg-destructive text-destructive-foreground px-3 py-1 text-xs font-semibold hover:bg-destructive/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               Retry
             </button>
@@ -116,17 +126,27 @@ export default function HomePage() {
       )}
       <div className="container mx-auto max-w-4xl">
         {/* Tab Navigation */}
-        <div className="flex space-x-1 mb-6 bg-muted p-1 rounded-lg border border-border">
+        <div
+          role="tablist"
+          aria-label="Primary views"
+          className="flex space-x-1 mb-6 bg-muted p-1 rounded-lg border border-border"
+        >
           <button
+            role="tab"
+            aria-selected={true}
+            aria-controls="contacts-panel"
             onClick={() => setActiveTab("contacts")}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors bg-background text-foreground shadow-sm border border-border"
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors bg-background text-foreground shadow-sm border border-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
             <Contact size={16} />
             Contacts
           </button>
           <button
+            role="tab"
+            aria-selected={false}
+            aria-controls="logs-panel"
             onClick={() => setActiveTab("logs")}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors text-muted-foreground hover:text-foreground hover:bg-accent border border-transparent"
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors text-muted-foreground hover:text-foreground hover:bg-accent border border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
             <BookOpen size={16} />
             Logs
@@ -134,12 +154,14 @@ export default function HomePage() {
         </div>
 
         {/* Content */}
-        <ContactsView
-          contacts={contacts}
-          tags={tags}
-          onContactsUpdate={refreshContacts}
-          onTagsUpdate={refreshTags}
-        />
+        <div id="contacts-panel" role="tabpanel">
+          <ContactsView
+            contacts={contacts}
+            tags={tags}
+            onContactsUpdate={refreshContacts}
+            onTagsUpdate={refreshTags}
+          />
+        </div>
       </div>
     </div>
   );

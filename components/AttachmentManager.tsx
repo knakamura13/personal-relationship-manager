@@ -164,7 +164,7 @@ export default function AttachmentManager({
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={isUploading}
-            className="inline-flex items-center gap-2 px-3 py-2 border border-input rounded-lg bg-background hover:bg-accent transition-colors cursor-pointer text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-2 px-3 py-2 border border-input rounded-lg bg-background hover:bg-accent transition-colors cursor-pointer text-sm disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
             <Upload size={16} />
             {isUploading ? "Uploading..." : "Upload Files"}
@@ -205,12 +205,17 @@ export default function AttachmentManager({
                       attachment.mimeType.startsWith("image/")
                         ? "cursor-pointer hover:opacity-80 transition-opacity"
                         : "cursor-default"
-                    }`}
+                    } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm`}
                     disabled={!attachment.mimeType.startsWith("image/")}
                     title={
                       attachment.mimeType.startsWith("image/")
                         ? "Click to preview"
                         : ""
+                    }
+                    aria-label={
+                      attachment.mimeType.startsWith("image/")
+                        ? `Preview ${attachment.filename}`
+                        : `Cannot preview ${attachment.filename}`
                     }
                   >
                     {getFileIcon(attachment.mimeType)}
@@ -229,16 +234,18 @@ export default function AttachmentManager({
                   <button
                     type="button"
                     onClick={() => handleDownload(attachment)}
-                    className="p-1 hover:bg-accent rounded transition-colors"
+                    className="p-1 hover:bg-accent rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     title="Download"
+                    aria-label={`Download ${attachment.filename}`}
                   >
                     <Download size={14} />
                   </button>
                   <button
                     type="button"
                     onClick={() => handleDelete(attachment.id)}
-                    className="p-1 hover:bg-destructive/10 text-destructive hover:text-destructive rounded transition-colors"
+                    className="p-1 hover:bg-destructive/10 text-destructive hover:text-destructive rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     title="Delete"
+                    aria-label={`Delete ${attachment.filename}`}
                   >
                     <X size={14} />
                   </button>

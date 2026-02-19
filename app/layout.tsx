@@ -6,7 +6,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 export const metadata: Metadata = {
   title: "Personal Relationship Manager",
   description: "Simple contact and log management for personal relationships",
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1",
+  viewport: "width=device-width, initial-scale=1",
 };
 
 export default function RootLayout({
