@@ -3,6 +3,7 @@
 import {
   useState,
   useMemo,
+  useDeferredValue,
   useEffect,
   useCallback,
   useRef,
@@ -68,6 +69,7 @@ export default function ContactsView({
   onTagsUpdate,
 }: ContactsViewProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"name" | "date">("name");
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
@@ -91,6 +93,19 @@ export default function ContactsView({
 
   const [formData, setFormData] = useState(emptyForm);
 
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 150);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [searchQuery]);
+
+  const deferredSearchQuery = useDeferredValue(debouncedSearchQuery);
+  const hasActiveFilters = Boolean(deferredSearchQuery || activeTagFilter);
+
   // Filter and sort contacts
   const filteredAndSortedContacts = useMemo(() => {
     const normalizedActiveTag = activeTagFilter?.toLowerCase();
@@ -99,7 +114,7 @@ export default function ContactsView({
       const searchText = `${contact.name} ${contact.notes} ${contact.tags.join(
         " "
       )}`;
-      const matchesSearch = fuzzySearch(searchQuery, searchText);
+      const matchesSearch = fuzzySearch(deferredSearchQuery, searchText);
       const matchesTag =
         !normalizedActiveTag ||
         contact.tags.some((tag) => tag.toLowerCase() === normalizedActiveTag);
@@ -116,7 +131,7 @@ export default function ContactsView({
         );
       }
     });
-  }, [contacts, searchQuery, sortBy, activeTagFilter]);
+  }, [contacts, deferredSearchQuery, sortBy, activeTagFilter]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -597,7 +612,7 @@ export default function ContactsView({
             <User size={48} className="mx-auto mb-4 opacity-50" />
             <p className="text-lg">No contacts found</p>
             <p className="text-sm">
-              {searchQuery
+              {hasActiveFilters
                 ? "Try adjusting your search"
                 : "Add your first contact to get started"}
             </p>

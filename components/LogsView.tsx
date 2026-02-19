@@ -3,6 +3,7 @@
 import {
   useState,
   useMemo,
+  useDeferredValue,
   useEffect,
   useCallback,
   useRef,
@@ -58,6 +59,7 @@ export default function LogsView({
   onTagsUpdate,
 }: LogsViewProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingLog, setEditingLog] = useState<LogEntry | null>(null);
   const [shouldScrollToEdit, setShouldScrollToEdit] = useState(false);
@@ -79,13 +81,26 @@ export default function LogsView({
 
   const [formData, setFormData] = useState(createEmptyForm);
 
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 150);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [searchQuery]);
+
+  const deferredSearchQuery = useDeferredValue(debouncedSearchQuery);
+  const hasActiveFilters = Boolean(deferredSearchQuery || activeTagFilter);
+
   // Filter logs (search and reverse chronological order)
   const filteredLogs = useMemo(() => {
     const normalizedActiveTag = activeTagFilter?.toLowerCase();
 
     let filtered = logs.filter((log) => {
       const searchText = `${log.title} ${log.content} ${log.tags.join(" ")}`;
-      const matchesSearch = fuzzySearch(searchQuery, searchText);
+      const matchesSearch = fuzzySearch(deferredSearchQuery, searchText);
       const matchesTag =
         !normalizedActiveTag ||
         log.tags.some((tag) => tag.toLowerCase() === normalizedActiveTag);
@@ -97,7 +112,7 @@ export default function LogsView({
     return filtered.sort((a, b) => {
       return new Date(b.date).getTime() - new Date(a.date).getTime();
     });
-  }, [logs, searchQuery, activeTagFilter]);
+  }, [logs, deferredSearchQuery, activeTagFilter]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -466,7 +481,7 @@ export default function LogsView({
             <BookOpen size={48} className="mx-auto mb-4 opacity-50" />
             <p className="text-lg">No log entries found</p>
             <p className="text-sm">
-              {searchQuery
+              {hasActiveFilters
                 ? "Try adjusting your search"
                 : "Add your first log entry to get started"}
             </p>
