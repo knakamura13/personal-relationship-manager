@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useRef, type KeyboardEvent } from "react";
 import { Contact, BookOpen } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import ContactsView from "@/components/ContactsView";
@@ -18,6 +18,8 @@ export default function HomePage() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const activeTab = getValidTab(searchParams.get("tab"));
+  const contactsTabRef = useRef<HTMLButtonElement>(null);
+  const logsTabRef = useRef<HTMLButtonElement>(null);
 
   const setActiveTab = useCallback(
     (nextTab: Tab) => {
@@ -26,6 +28,41 @@ export default function HomePage() {
       router.push(`${pathname}?${params.toString()}`);
     },
     [pathname, router, searchParams],
+  );
+
+  const focusTab = useCallback((tab: Tab) => {
+    if (tab === "contacts") {
+      contactsTabRef.current?.focus();
+      return;
+    }
+
+    logsTabRef.current?.focus();
+  }, []);
+
+  const handleTabKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLButtonElement>, currentTab: Tab) => {
+      let nextTab: Tab | null = null;
+
+      switch (event.key) {
+        case "ArrowRight":
+        case "ArrowLeft":
+          nextTab = currentTab === "contacts" ? "logs" : "contacts";
+          break;
+        case "Home":
+          nextTab = "contacts";
+          break;
+        case "End":
+          nextTab = "logs";
+          break;
+        default:
+          return;
+      }
+
+      event.preventDefault();
+      setActiveTab(nextTab);
+      focusTab(nextTab);
+    },
+    [focusTab, setActiveTab],
   );
 
   const {
@@ -81,12 +118,14 @@ export default function HomePage() {
           className="flex space-x-1 mb-6 bg-muted p-1 rounded-lg border border-border"
         >
           <button
+            ref={contactsTabRef}
             id="contacts-tab"
             role="tab"
             aria-selected={activeTab === "contacts"}
             aria-controls="contacts-panel"
             tabIndex={activeTab === "contacts" ? 0 : -1}
             onClick={() => setActiveTab("contacts")}
+            onKeyDown={(event) => handleTabKeyDown(event, "contacts")}
             className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
               activeTab === "contacts"
                 ? "bg-background text-foreground shadow-sm border-border"
@@ -97,12 +136,14 @@ export default function HomePage() {
             Contacts
           </button>
           <button
+            ref={logsTabRef}
             id="logs-tab"
             role="tab"
             aria-selected={activeTab === "logs"}
             aria-controls="logs-panel"
             tabIndex={activeTab === "logs" ? 0 : -1}
             onClick={() => setActiveTab("logs")}
+            onKeyDown={(event) => handleTabKeyDown(event, "logs")}
             className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
               activeTab === "logs"
                 ? "bg-background text-foreground shadow-sm border-border"
