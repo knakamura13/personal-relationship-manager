@@ -5,6 +5,7 @@ import {
   useMemo,
   useDeferredValue,
   useEffect,
+  useLayoutEffect,
   useCallback,
   useRef,
   type MouseEvent,
@@ -145,7 +146,7 @@ export default function ContactsView({
     [filteredAndSortedContacts, visibleCount]
   );
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setVisibleCount(INITIAL_VISIBLE_CONTACTS);
   }, [searchQuery, sortBy, activeTagFilter]);
 

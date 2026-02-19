@@ -5,6 +5,7 @@ import {
   useMemo,
   useDeferredValue,
   useEffect,
+  useLayoutEffect,
   useCallback,
   useRef,
   type MouseEvent,
@@ -123,7 +124,7 @@ export default function LogsView({
     [filteredLogs, visibleCount]
   );
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setVisibleCount(INITIAL_VISIBLE_LOGS);
   }, [searchQuery, activeTagFilter]);
 
