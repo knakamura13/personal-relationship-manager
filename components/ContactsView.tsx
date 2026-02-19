@@ -80,6 +80,10 @@ export default function ContactsView({
     null
   );
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+  const avatarModalCloseButtonRef = useRef<HTMLButtonElement | null>(null);
+  const attachmentModalCloseButtonRef = useRef<HTMLButtonElement | null>(null);
+  const avatarModalTriggerRef = useRef<HTMLElement | null>(null);
+  const attachmentModalTriggerRef = useRef<HTMLElement | null>(null);
 
   // Form state
   const emptyForm = {
@@ -237,12 +241,14 @@ export default function ContactsView({
 
   const openAvatarModal = () => {
     if (formData.avatar) {
+      avatarModalTriggerRef.current = document.activeElement as HTMLElement;
       setShowAvatarModal(true);
     }
   };
 
   const closeAvatarModal = () => {
     setShowAvatarModal(false);
+    avatarModalTriggerRef.current?.focus();
   };
 
   const handleAttachmentPreview = async (attachment: Attachment | null) => {
@@ -252,6 +258,7 @@ export default function ContactsView({
     }
 
     try {
+      attachmentModalTriggerRef.current = document.activeElement as HTMLElement;
       setPreviewAttachment(attachment);
 
       const response = await fetch(`/api/attachments/${attachment.id}`);
@@ -279,6 +286,7 @@ export default function ContactsView({
     }
     setPreviewImageUrl(null);
     setPreviewAttachment(null);
+    attachmentModalTriggerRef.current?.focus();
   }, [previewImageUrl]);
 
   const handlePreviewModalClick = (e: React.MouseEvent) => {
@@ -332,6 +340,18 @@ export default function ContactsView({
       }
     };
   }, [previewImageUrl]);
+
+  useEffect(() => {
+    if (showAvatarModal) {
+      avatarModalCloseButtonRef.current?.focus();
+    }
+  }, [showAvatarModal]);
+
+  useEffect(() => {
+    if (previewAttachment) {
+      attachmentModalCloseButtonRef.current?.focus();
+    }
+  }, [previewAttachment]);
 
   // Update editingContact when contacts array changes (after attachment operations)
   useEffect(() => {
@@ -695,16 +715,18 @@ export default function ContactsView({
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
           onClick={closeAvatarModal}
         >
-          <div className="relative max-w-3xl max-h-full">
+          <div className="relative">
             <Image
               src={formData.avatar}
               alt="Avatar full size"
-              fill
-              className="max-w-full max-h-full object-contain rounded-lg"
+              width={1200}
+              height={1200}
+              className="w-auto h-auto max-w-[90vw] max-h-[85vh] object-contain rounded-lg"
               onClick={(e) => e.stopPropagation()}
             />
             <button
               onClick={closeAvatarModal}
+              ref={avatarModalCloseButtonRef}
               className="absolute -top-2 -right-2 w-8 h-8 bg-white text-black rounded-full flex items-center justify-center hover:bg-gray-100 transition-colors shadow-lg"
               title="Close"
             >
@@ -720,13 +742,14 @@ export default function ContactsView({
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
           onClick={handlePreviewModalClick}
         >
-          <div className="relative max-w-4xl max-h-full">
+          <div className="relative">
             {previewImageUrl ? (
               <Image
                 src={previewImageUrl}
                 alt={previewAttachment.filename}
-                fill
-                className="max-w-full max-h-full object-contain rounded-lg"
+                width={1600}
+                height={1200}
+                className="w-auto h-auto max-w-[90vw] max-h-[85vh] object-contain rounded-lg"
                 onClick={(e) => e.stopPropagation()}
               />
             ) : (
@@ -741,6 +764,7 @@ export default function ContactsView({
             )}
             <button
               onClick={closeAttachmentPreview}
+              ref={attachmentModalCloseButtonRef}
               className="absolute -top-2 -right-2 w-8 h-8 bg-white text-black rounded-full flex items-center justify-center hover:bg-gray-100 transition-colors shadow-lg"
               title="Close"
             >
