@@ -58,23 +58,23 @@ export async function POST(request: NextRequest) {
           )
         : [];
 
-    const logEntry = await prisma.logEntry.create({
-      data: {
-        title: title.trim(),
-        content: content?.trim() || "",
-        date: date ? new Date(date) : new Date(),
-        tags: JSON.stringify(normalizedTags),
-      },
-    });
+    const logEntry = await prisma.$transaction(async (tx) => {
+      if (normalizedTags.length > 0) {
+        await tx.tag.createMany({
+          data: normalizedTags.map((tagName) => ({ name: tagName })),
+          skipDuplicates: true,
+        });
+      }
 
-    // Update tags table with new tags
-    for (const tagName of normalizedTags) {
-      await prisma.tag.upsert({
-        where: { name: tagName },
-        create: { name: tagName },
-        update: {},
+      return tx.logEntry.create({
+        data: {
+          title: title.trim(),
+          content: content?.trim() || "",
+          date: date ? new Date(date) : new Date(),
+          tags: JSON.stringify(normalizedTags),
+        },
       });
-    }
+    });
 
     return NextResponse.json(
       {
