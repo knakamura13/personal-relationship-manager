@@ -3,6 +3,7 @@
 import {
   useState,
   useMemo,
+  useDeferredValue,
   useEffect,
   useCallback,
   useRef,
@@ -58,6 +59,7 @@ export default function LogsView({
   onTagsUpdate,
 }: LogsViewProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingLog, setEditingLog] = useState<LogEntry | null>(null);
   const [shouldScrollToEdit, setShouldScrollToEdit] = useState(false);
@@ -68,6 +70,8 @@ export default function LogsView({
     null
   );
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+  const attachmentModalCloseButtonRef = useRef<HTMLButtonElement | null>(null);
+  const attachmentModalTriggerRef = useRef<HTMLElement | null>(null);
 
   // Form state
   const createEmptyForm = () => ({
@@ -79,13 +83,26 @@ export default function LogsView({
 
   const [formData, setFormData] = useState(createEmptyForm);
 
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 150);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [searchQuery]);
+
+  const deferredSearchQuery = useDeferredValue(debouncedSearchQuery);
+  const hasActiveFilters = Boolean(deferredSearchQuery || activeTagFilter);
+
   // Filter logs (search and reverse chronological order)
   const filteredLogs = useMemo(() => {
     const normalizedActiveTag = activeTagFilter?.toLowerCase();
 
     let filtered = logs.filter((log) => {
       const searchText = `${log.title} ${log.content} ${log.tags.join(" ")}`;
-      const matchesSearch = fuzzySearch(searchQuery, searchText);
+      const matchesSearch = fuzzySearch(deferredSearchQuery, searchText);
       const matchesTag =
         !normalizedActiveTag ||
         log.tags.some((tag) => tag.toLowerCase() === normalizedActiveTag);
@@ -97,7 +114,7 @@ export default function LogsView({
     return filtered.sort((a, b) => {
       return new Date(b.date).getTime() - new Date(a.date).getTime();
     });
-  }, [logs, searchQuery, activeTagFilter]);
+  }, [logs, deferredSearchQuery, activeTagFilter]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -197,6 +214,7 @@ export default function LogsView({
     }
 
     try {
+      attachmentModalTriggerRef.current = document.activeElement as HTMLElement;
       setPreviewAttachment(attachment);
 
       const response = await fetch(`/api/attachments/${attachment.id}`);
@@ -224,6 +242,7 @@ export default function LogsView({
     }
     setPreviewImageUrl(null);
     setPreviewAttachment(null);
+    attachmentModalTriggerRef.current?.focus();
   }, [previewImageUrl]);
 
   const handlePreviewModalClick = (e: React.MouseEvent) => {
@@ -261,6 +280,12 @@ export default function LogsView({
       }
     };
   }, [previewImageUrl]);
+
+  useEffect(() => {
+    if (previewAttachment) {
+      attachmentModalCloseButtonRef.current?.focus();
+    }
+  }, [previewAttachment]);
 
   // Keep editing log in sync after attachments/log updates
   useEffect(() => {
@@ -466,7 +491,7 @@ export default function LogsView({
             <BookOpen size={48} className="mx-auto mb-4 opacity-50" />
             <p className="text-lg">No log entries found</p>
             <p className="text-sm">
-              {searchQuery
+              {hasActiveFilters
                 ? "Try adjusting your search"
                 : "Add your first log entry to get started"}
             </p>
@@ -627,13 +652,14 @@ export default function LogsView({
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
           onClick={handlePreviewModalClick}
         >
-          <div className="relative max-w-4xl max-h-full">
+          <div className="relative">
             {previewImageUrl ? (
               <Image
                 src={previewImageUrl}
                 alt={previewAttachment.filename}
-                fill
-                className="max-w-full max-h-full object-contain rounded-lg"
+                width={1600}
+                height={1200}
+                className="w-auto h-auto max-w-[90vw] max-h-[85vh] object-contain rounded-lg"
                 onClick={(e) => e.stopPropagation()}
               />
             ) : (
@@ -648,6 +674,7 @@ export default function LogsView({
             )}
             <button
               onClick={closeAttachmentPreview}
+              ref={attachmentModalCloseButtonRef}
               className="absolute -top-2 -right-2 w-8 h-8 bg-white text-black rounded-full flex items-center justify-center hover:bg-gray-100 transition-colors shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               title="Close"
               aria-label="Close preview"

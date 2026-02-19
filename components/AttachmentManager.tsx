@@ -18,6 +18,9 @@ interface Attachment {
   mimeType: string;
   size: number;
   createdAt: string;
+  storageProvider?: string | null;
+  storageReference?: string | null;
+  storageUrl?: string | null;
 }
 
 interface AttachmentManagerProps {
