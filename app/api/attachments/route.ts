@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { attachmentStorageService } from "@/lib/attachment-storage";
 
 // File size limit: 5MB to keep storage costs manageable
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB in bytes
@@ -66,9 +67,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Convert file to base64
     const arrayBuffer = await file.arrayBuffer();
-    const base64Data = Buffer.from(arrayBuffer).toString("base64");
+    const buffer = Buffer.from(arrayBuffer);
+
+    const storagePayload = await attachmentStorageService.storePayload({
+      buffer,
+    });
 
     // Verify the parent exists
     if (contactId) {
@@ -101,13 +105,16 @@ export async function POST(request: NextRequest) {
         filename: file.name,
         mimeType: file.type,
         size: file.size,
-        data: base64Data,
+        data: storagePayload.data,
+        storageProvider: storagePayload.storageProvider ?? null,
+        storageReference: storagePayload.storageReference ?? null,
+        storageUrl: storagePayload.storageUrl ?? null,
         contactId: contactId || null,
         logEntryId: logEntryId || null,
       },
     });
 
-    // Return attachment without the base64 data to save bandwidth
+    // Return attachment metadata only to save bandwidth
     const { data, ...attachmentWithoutData } = attachment;
 
     return NextResponse.json(attachmentWithoutData, { status: 201 });
@@ -144,6 +151,9 @@ export async function GET(request: NextRequest) {
         mimeType: true,
         size: true,
         createdAt: true,
+        storageProvider: true,
+        storageReference: true,
+        storageUrl: true,
         // Exclude data field to save bandwidth
       },
       orderBy: {

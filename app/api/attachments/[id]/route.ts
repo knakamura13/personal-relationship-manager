@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { attachmentStorageService } from "@/lib/attachment-storage";
 
 export async function GET(
   request: NextRequest,
@@ -17,8 +18,12 @@ export async function GET(
       );
     }
 
-    // Convert base64 back to binary
-    const buffer = Buffer.from(attachment.data, "base64");
+    const buffer = await attachmentStorageService.readPayload({
+      data: attachment.data,
+      storageProvider: attachment.storageProvider,
+      storageReference: attachment.storageReference,
+      storageUrl: attachment.storageUrl,
+    });
 
     return new NextResponse(buffer, {
       headers: {
@@ -51,6 +56,13 @@ export async function DELETE(
         { status: 404 }
       );
     }
+
+    await attachmentStorageService.deletePayload({
+      data: attachment.data,
+      storageProvider: attachment.storageProvider,
+      storageReference: attachment.storageReference,
+      storageUrl: attachment.storageUrl,
+    });
 
     await prisma.attachment.delete({
       where: { id: params.id },
