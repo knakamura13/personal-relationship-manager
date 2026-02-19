@@ -418,14 +418,14 @@ export default function LogsView({
         <div className="flex gap-2 pt-4">
           <button
             type="submit"
-            className="px-3 sm:px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm"
+            className="px-3 sm:px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
             Save Entry
           </button>
           <button
             type="button"
             onClick={resetForm}
-            className="px-3 sm:px-4 py-2 border border-input text-foreground rounded-lg hover:bg-accent transition-colors text-sm"
+            className="px-3 sm:px-4 py-2 border border-input text-foreground rounded-lg hover:bg-accent transition-colors text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
             Cancel
           </button>
@@ -433,7 +433,7 @@ export default function LogsView({
             <button
               type="button"
               onClick={() => handleDelete(editingLog.id)}
-              className="px-3 sm:px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 transition-colors ml-auto text-sm"
+              className="px-3 sm:px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 transition-colors ml-auto text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               Delete
             </button>
@@ -470,7 +470,7 @@ export default function LogsView({
               <button
                 type="button"
                 onClick={() => setActiveTagFilter(null)}
-                className="text-muted-foreground hover:text-foreground underline underline-offset-2"
+                className="text-muted-foreground hover:text-foreground underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm"
               >
                 Clear
               </button>
@@ -486,7 +486,7 @@ export default function LogsView({
             setShouldScrollToEdit(false);
             activeCardRef.current = null;
           }}
-          className="flex items-center gap-2 px-4 py-2 h-10 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm w-full sm:w-auto justify-center"
+          className="flex items-center gap-2 px-4 py-2 h-10 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 w-full sm:w-auto justify-center"
         >
           <Plus size={16} />
           Add Log Entry
@@ -532,7 +532,7 @@ export default function LogsView({
                       <div className="flex-1 min-w-0">
                         <button
                           onClick={() => startEdit(log)}
-                          className="text-left w-full group"
+                          className="text-left w-full group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-md"
                         >
                           <h3 className="font-semibold text-foreground text-lg mb-1 group-hover:text-primary transition-colors">
                             {log.title}
@@ -562,7 +562,7 @@ export default function LogsView({
                                   type="button"
                                   key={tag}
                                   onClick={(e) => handleTagClick(tag, e)}
-                                  className={`inline-flex items-center px-2 py-1 rounded-md text-xs border lowercase transition-colors ${
+                                  className={`inline-flex items-center px-2 py-1 rounded-md text-xs border lowercase transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                                     isActive
                                       ? "bg-primary text-primary-foreground border-primary"
                                       : "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20"
@@ -596,7 +596,7 @@ export default function LogsView({
                       <div className="pl-0">
                         <button
                           onClick={() => startEdit(log)}
-                          className="text-left w-full group"
+                          className="text-left w-full group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-md"
                         >
                           <h3 className="font-semibold text-foreground text-lg mb-1 group-hover:text-primary transition-colors">
                             {log.title}
@@ -626,7 +626,7 @@ export default function LogsView({
                                   type="button"
                                   key={tag}
                                   onClick={(e) => handleTagClick(tag, e)}
-                                  className={`inline-flex items-center px-2 py-1 rounded-md text-xs border lowercase transition-colors ${
+                                  className={`inline-flex items-center px-2 py-1 rounded-md text-xs border lowercase transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                                     isActive
                                       ? "bg-primary text-primary-foreground border-primary"
                                       : "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20"
@@ -701,8 +701,9 @@ export default function LogsView({
             <button
               onClick={closeAttachmentPreview}
               ref={attachmentModalCloseButtonRef}
-              className="absolute -top-2 -right-2 w-8 h-8 bg-white text-black rounded-full flex items-center justify-center hover:bg-gray-100 transition-colors shadow-lg"
+              className="absolute -top-2 -right-2 w-8 h-8 bg-white text-black rounded-full flex items-center justify-center hover:bg-gray-100 transition-colors shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               title="Close"
+              aria-label="Close preview"
             >
               <X size={16} />
             </button>

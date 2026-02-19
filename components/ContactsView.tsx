@@ -467,7 +467,8 @@ export default function ContactsView({
                 <button
                   type="button"
                   onClick={removeAvatar}
-                  className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center hover:bg-destructive/90 transition-colors"
+                  aria-label="Remove avatar"
+                  className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center hover:bg-destructive/90 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
                   <X size={12} />
                 </button>
@@ -541,14 +542,14 @@ export default function ContactsView({
         <div className="flex gap-2 pt-4">
           <button
             type="submit"
-            className="px-3 sm:px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm"
+            className="px-3 sm:px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
             Save Contact
           </button>
           <button
             type="button"
             onClick={resetForm}
-            className="px-3 sm:px-4 py-2 border border-input text-foreground rounded-lg hover:bg-accent transition-colors text-sm"
+            className="px-3 sm:px-4 py-2 border border-input text-foreground rounded-lg hover:bg-accent transition-colors text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
             Cancel
           </button>
@@ -556,7 +557,7 @@ export default function ContactsView({
             <button
               type="button"
               onClick={() => handleDelete(editingContact.id)}
-              className="px-3 sm:px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 transition-colors ml-auto text-sm"
+              className="px-3 sm:px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 transition-colors ml-auto text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               Delete
             </button>
@@ -594,7 +595,7 @@ export default function ContactsView({
               <button
                 type="button"
                 onClick={() => setActiveTagFilter(null)}
-                className="text-muted-foreground hover:text-foreground underline underline-offset-2"
+                className="text-muted-foreground hover:text-foreground underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm"
               >
                 Clear
               </button>
@@ -627,7 +628,7 @@ export default function ContactsView({
               setShouldScrollToEdit(false);
               activeCardRef.current = null;
             }}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm"
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
             <Plus size={16} />
             Add Contact
@@ -664,7 +665,7 @@ export default function ContactsView({
               >
                 <button
                   onClick={() => startEdit(contact)}
-                  className="text-left w-full group"
+                  className="text-left w-full group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-md"
                 >
                   <div className="flex items-start gap-3">
                     {contact.avatar ? (
@@ -700,7 +701,7 @@ export default function ContactsView({
                                 type="button"
                                 key={tag}
                                 onClick={(e) => handleTagClick(tag, e)}
-                                className={`inline-flex items-center px-2 py-1 rounded-md text-xs border lowercase transition-colors ${
+                                className={`inline-flex items-center px-2 py-1 rounded-md text-xs border lowercase transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                                   isActive
                                     ? "bg-primary text-primary-foreground border-primary"
                                     : "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20"
@@ -768,9 +769,10 @@ export default function ContactsView({
             />
             <button
               onClick={closeAvatarModal}
+              className="absolute -top-2 -right-2 w-8 h-8 bg-white text-black rounded-full flex items-center justify-center hover:bg-gray-100 transition-colors shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               ref={avatarModalCloseButtonRef}
-              className="absolute -top-2 -right-2 w-8 h-8 bg-white text-black rounded-full flex items-center justify-center hover:bg-gray-100 transition-colors shadow-lg"
               title="Close"
+              aria-label="Close modal"
             >
               <X size={16} />
             </button>
@@ -807,8 +809,9 @@ export default function ContactsView({
             <button
               onClick={closeAttachmentPreview}
               ref={attachmentModalCloseButtonRef}
-              className="absolute -top-2 -right-2 w-8 h-8 bg-white text-black rounded-full flex items-center justify-center hover:bg-gray-100 transition-colors shadow-lg"
+              className="absolute -top-2 -right-2 w-8 h-8 bg-white text-black rounded-full flex items-center justify-center hover:bg-gray-100 transition-colors shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               title="Close"
+              aria-label="Close preview"
             >
               <X size={16} />
             </button>

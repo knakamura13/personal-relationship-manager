@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -6,7 +6,11 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 export const metadata: Metadata = {
   title: "Personal Relationship Manager",
   description: "Simple contact and log management for personal relationships",
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({
