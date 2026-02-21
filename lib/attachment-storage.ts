@@ -39,7 +39,7 @@ class DatabaseAttachmentStorageProvider implements AttachmentStorageProvider {
     return Buffer.from(record.data, "base64");
   }
 
-  async remove() {
+  async remove(_record: AttachmentStorageRecord) {
     // No-op. Payload is removed with the attachment row.
   }
 }
