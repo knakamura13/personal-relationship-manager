@@ -1,6 +1,11 @@
 "use client";
 
-import { useCallback, useRef, type KeyboardEvent } from "react";
+import {
+  Suspense,
+  useCallback,
+  useRef,
+  type KeyboardEvent,
+} from "react";
 import { Contact, BookOpen } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import ContactsView from "@/components/ContactsView";
@@ -13,7 +18,7 @@ function getValidTab(tab: string | null): Tab {
   return tab === "logs" ? "logs" : "contacts";
 }
 
-export default function HomePage() {
+function HomePageContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -184,5 +189,21 @@ export default function HomePage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <div className="text-center">
+            <div className="text-lg font-medium">Loading...</div>
+          </div>
+        </div>
+      }
+    >
+      <HomePageContent />
+    </Suspense>
   );
 }
