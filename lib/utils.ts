@@ -38,7 +38,12 @@ export function formatDate(date: Date): string {
 
 // Format date for input
 export function formatDateForInput(date: Date): string {
-  return new Date(date).toISOString().split("T")[0];
+  const localDate = new Date(date);
+  const year = localDate.getFullYear();
+  const month = String(localDate.getMonth() + 1).padStart(2, "0");
+  const day = String(localDate.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
 }
 
 // Compress and resize image to base64
